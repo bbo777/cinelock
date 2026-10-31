@@ -4,14 +4,6 @@
 
 [简体中文](README.md) · **English**
 
-## Why I built this
-
-> I only have an ASUS VivoBook. I cannot afford compute, so I can only write the most exacting code. CineLock does not generate videos for you; it protects your context. Use it to export a handoff pack and spend your web credits on generation, or connect it to ComfyUI and run local models. I built the hardest part — the architecture. The generation is up to you.
-
-This thin-and-light laptop can handle text processing, JSON compilation, state-machine validation, and mock rendering. What it cannot do is burn hundreds or thousands of yuan searching for one usable shot. So CineLock keeps the money at the generation step and moves "don't break continuity" as far forward as possible — into compilation.
-
-CineLock (formerly NineFlow) is a context governance engine that is independent of any specific model or platform. This repository ships *Nine Inning Bottom* as a public demo project. It is not tied to any vendor CLI and does not require Node.js: after `pip install -r requirements.txt`, the entire pipeline runs in a pure Python environment.
-
 ![tests](https://img.shields.io/badge/tests-76%20passing-brightgreen)
 ![python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
@@ -39,6 +31,16 @@ Four built-in adapter types, all open interfaces, no private CLI:
 | `http_api` | Generic HTTP adapter with Kling / Runway presets and support for arbitrary vendors | Developers with official API keys |
 
 **CineLock does not proxy credits, share accounts, or bypass any platform limit.** It only handles input-side consistency governance and evidence-chain auditing.
+
+---
+
+## Why I built this
+
+> I only have an ASUS VivoBook. I cannot afford compute, so I can only write the most exacting code. CineLock does not generate videos for you; it protects your context. Use it to export a handoff pack and spend your web credits on generation, or connect it to ComfyUI and run local models. I built the hardest part — the architecture. The generation is up to you.
+
+This thin-and-light laptop can handle text processing, JSON compilation, state-machine validation, and mock rendering. What it cannot do is burn hundreds or thousands of yuan searching for one usable shot. So CineLock keeps the money at the generation step and moves "don't break continuity" as far forward as possible — into compilation.
+
+CineLock (formerly NineFlow) is a context governance engine that is independent of any specific model or platform. This repository ships *Nine Inning Bottom* as a public demo project. It is not tied to any vendor CLI and does not require Node.js: after `pip install -r requirements.txt`, the entire pipeline runs in a pure Python environment.
 
 ---
 

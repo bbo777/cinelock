@@ -4,14 +4,6 @@
 
 **简体中文** · [English](README.en.md)
 
-## 为什么我构建这个（Why I built this）
-
-> 我只有一台 ASUS VivoBook，买不起算力，只能写极致的代码。CineLock 不负责帮你生成视频，它负责帮你守住上下文。你可以用它导出交接包（Handoff）去白嫖网页端额度，也可以接入 ComfyUI 跑本地模型。我完成了最难的架构，剩下的生成交给你自己。
-
-这台轻薄本能做文字处理、JSON 编译、状态机校验和 mock 渲染；它做不了的，是替你烧掉几百上千块去抽一条能用的镜头。所以 CineLock 把“钱”留在生成那一步，把“不穿帮”尽量前移到编译那一步。
-
-CineLock（原 NineFlow）是一个与具体模型、具体平台无关的上下文治理引擎。本仓库自带《九局下半》作为公开演示项目。它不绑定任何一家厂商的 CLI，也不要求你安装 Node.js：`pip install -r requirements.txt` 之后，纯 Python 环境就能跑通整条链路。
-
 ![tests](https://img.shields.io/badge/tests-76%20passing-brightgreen)
 ![python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
@@ -39,6 +31,16 @@ CineLock 把“生成”抽象成一个统一协议：引擎只负责把编译�
 | `http_api` | 通用 HTTP 适配器，内置可灵 / Runway 预设，也可配置任意厂商 | 有官方 API Key 的开发者 |
 
 **CineLock 不代理额度、不共享账号、不绕过任何平台限制。** 它只做输入侧的一致性治理与证据链审计。
+
+---
+
+## 为什么我构建这个（Why I built this）
+
+> 我只有一台 ASUS VivoBook，买不起算力，只能写极致的代码。CineLock 不负责帮你生成视频，它负责帮你守住上下文。你可以用它导出交接包（Handoff）去白嫖网页端额度，也可以接入 ComfyUI 跑本地模型。我完成了最难的架构，剩下的生成交给你自己。
+
+这台轻薄本能做文字处理、JSON 编译、状态机校验和 mock 渲染；它做不了的，是替你烧掉几百上千块去抽一条能用的镜头。所以 CineLock 把“钱”留在生成那一步，把“不穿帮”尽量前移到编译那一步。
+
+CineLock（原 NineFlow）是一个与具体模型、具体平台无关的上下文治理引擎。本仓库自带《九局下半》作为公开演示项目。它不绑定任何一家厂商的 CLI，也不要求你安装 Node.js：`pip install -r requirements.txt` 之后，纯 Python 环境就能跑通整条链路。
 
 ---
 
