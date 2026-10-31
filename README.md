@@ -2,7 +2,9 @@
 
 **一个平台无关的 AI 视频上下文治理引擎（Context Governance Engine for AI Video）。**
 
-## Why I built this（我的开发动机）
+**简体中文** · [English](README.en.md)
+
+## 为什么我构建这个（Why I built this）
 
 > 我只有一台 ASUS VivoBook，买不起算力，只能写极致的代码。CineLock 不负责帮你生成视频，它负责帮你守住上下文。你可以用它导出交接包（Handoff）去白嫖网页端额度，也可以接入 ComfyUI 跑本地模型。我完成了最难的架构，剩下的生成交给你自己。
 
