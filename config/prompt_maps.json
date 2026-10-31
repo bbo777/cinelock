@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "notes": "中文分镜词 → 英文提示词片段。宁可少改，也不要每镜换一种说法，否则风格会漂。",
+  "shot_size": {
+    "大远景": "extreme wide shot, figure tiny in frame, environment dominant",
+    "远景": "wide shot, full body visible, environment readable",
+    "全景": "full shot, full body head to toe",
+    "中景": "medium shot, waist up",
+    "中近": "medium close-up, chest up",
+    "近景": "close-up, shoulders up",
+    "特写": "tight close-up, face fills frame",
+    "大特写": "extreme close-up, eye or hand detail",
+    "黑场": "black frame, minimal light"
+  },
+  "camera": {
+    "固定": "static camera, locked-off",
+    "缓推": "slow dolly in",
+    "横移": "lateral tracking shot",
+    "跟": "follow shot, camera follows subject",
+    "摇": "pan",
+    "推": "dolly in",
+    "拉": "dolly out",
+    "升": "crane up",
+    "降": "crane down",
+    "手持": "handheld, slight shake",
+    "环绕": "orbit around subject",
+    "仰拍": "low angle",
+    "俯拍": "high angle",
+    "双人": "two-shot, both subjects in frame",
+    "正反打": "over-the-shoulder reverse angle",
+    "甩": "whip pan",
+    "慢动作": "slow motion",
+    "低角度": "low angle",
+    "柔焦": "soft focus, shallow depth of field"
+  }
+}

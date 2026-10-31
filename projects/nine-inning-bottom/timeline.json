@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0",
+  "episode_id": "E01",
+  "title": "九局下半 · 占位样片",
+  "notes": "时间线是共享状态机：state_delta 按镜头顺序演化，形成每个镜头的连续性快照。所有 provider 都从同一份快照编译，不允许各自维护角色状态。",
+  "scenes": [
+    {
+      "scene_id": "SC01_DUGUET_DUSK",
+      "label": "休息区 · 黄昏",
+      "location_en": "old high-school baseball dugout",
+      "time_of_day": "dusk",
+      "lighting_en": "low warm sunset raking across the dugout, long shadows, dust in the air, deep blue ambient shadows",
+      "composition_en": "dugout roof frames the character on the left third, empty field receding behind",
+      "refs": ["REF_SC01_DUGUET_DUSK_V01"],
+      "props": ["wooden bench", "scoreboard", "discarded gloves"],
+      "notes": "占位场景。"
+    },
+    {
+      "scene_id": "SC02_BATTERBOX_DUSK",
+      "label": "打击区 · 黄昏",
+      "location_en": "worn dirt batter's box in an old high-school baseball field",
+      "time_of_day": "dusk",
+      "lighting_en": "golden-hour backlight from the outfield, dust haze, rim light on the batter, deep blue sky",
+      "composition_en": "batter's box centered, diamond receding into dust haze, low horizon",
+      "refs": ["REF_SC02_BATTERBOX_DUSK_V01"],
+      "props": ["home plate", "chalk lines", "distant outfield fence"],
+      "notes": "占位场景。"
+    }
+  ],
+  "shots": [
+    {
+      "shot_id": "E01-001",
+      "scene_id": "SC01_DUGUET_DUSK",
+      "duration_sec": 5,
+      "shot_size": "中景",
+      "camera_move": "缓推",
+      "character_ids": ["CH_LINYE_01"],
+      "expressions": {"CH_LINYE_01": "neutral"},
+      "action_en": "Lin Ye sits alone on the dugout bench, gripping his wooden bat with both hands, eyes fixed on the scoreboard off-screen.",
+      "action_zh": "林野独自坐在休息区长椅上，双手握着球棒，盯着画外的记分牌。",
+      "dialogue": [],
+      "sfx": [
+        {"sfx_id": "SFX_CROWD_LOW", "desc": "远处稀疏的观众声", "at_sec": 0.0},
+        {"sfx_id": "SFX_BAT_CREAK", "desc": "球棒木纹轻响", "at_sec": 2.0}
+      ],
+      "continuity": {
+        "from_shot": null,
+        "state_delta": {},
+        "notes": "开场：干净主场球衣、球棒、黄昏光。"
+      },
+      "keyframes": {"first": null, "last": null},
+      "reference_overrides": [],
+      "mode_hint": "auto",
+      "risk_level": "low",
+      "status": "pending",
+      "notes": "建立镜头：先让观众记住脸、球衣号码 7 和球棒。"
+    },
+    {
+      "shot_id": "E01-002",
+      "scene_id": "SC01_DUGUET_DUSK",
+      "duration_sec": 6,
+      "shot_size": "近景",
+      "camera_move": "手持",
+      "character_ids": ["CH_LINYE_01"],
+      "expressions": {"CH_LINYE_01": "determined"},
+      "action_en": "Lin Ye rises from the bench, dust and infield dirt smearing his white jersey as he grabs his bat, jaw set.",
+      "action_zh": "林野从长椅起身，尘土和场上的泥蹭脏了白色球衣，他抓起球棒，咬紧牙关。",
+      "dialogue": [
+        {"line_id": "L01-01", "character_id": "CH_LINYE_01", "text": "还没完。", "delivery": "低声，咬住"}
+      ],
+      "sfx": [
+        {"sfx_id": "SFX_DUST_STEP", "desc": "鞋底碾过沙土", "at_sec": 1.2}
+      ],
+      "continuity": {
+        "from_shot": "E01-001",
+        "state_delta": {
+          "CH_LINYE_01": {
+            "wardrobe_state": "home_dirty",
+            "add_injuries": [],
+            "remove_injuries": [],
+            "add_props": [],
+            "remove_props": []
+          }
+        },
+        "notes": "球衣从干净变为泥污；球棒继续持有。"
+      },
+      "keyframes": {"first": null, "last": null},
+      "reference_overrides": [],
+      "mode_hint": "auto",
+      "risk_level": "medium",
+      "status": "pending",
+      "notes": "第一次状态变化：泥污从这里开始，后续镜头不能重置。"
+    },
+    {
+      "shot_id": "E01-003",
+      "scene_id": "SC02_BATTERBOX_DUSK",
+      "duration_sec": 7,
+      "shot_size": "全景",
+      "camera_move": "跟",
+      "character_ids": ["CH_LINYE_01"],
+      "expressions": {"CH_LINYE_01": "determined"},
+      "action_en": "Lin Ye walks from the dugout toward the batter's box, bat loose in his right hand, dusty jersey catching the backlight, crowd blurred at the edge of frame.",
+      "action_zh": "林野从休息区走向打击区，球棒松握在右手，沾泥的球衣被逆光勾边，观众在画面边缘虚化。",
+      "dialogue": [],
+      "sfx": [
+        {"sfx_id": "SFX_CROWD_SWELL", "desc": "观众声渐起", "at_sec": 0.0},
+        {"sfx_id": "SFX_CLEATS", "desc": "钉鞋踩土", "at_sec": 2.0}
+      ],
+      "continuity": {
+        "from_shot": "E01-002",
+        "state_delta": {},
+        "notes": "泥污延续；场景从休息区切到打击区，光线保持同一黄昏。"
+      },
+      "keyframes": {"first": null, "last": null},
+      "reference_overrides": [],
+      "mode_hint": "auto",
+      "risk_level": "medium",
+      "status": "pending",
+      "notes": "空间转换镜头：必须保持球衣泥污与球棒。"
+    },
+    {
+      "shot_id": "E01-004",
+      "scene_id": "SC02_BATTERBOX_DUSK",
+      "duration_sec": 5,
+      "shot_size": "特写",
+      "camera_move": "固定",
+      "character_ids": ["CH_LINYE_01"],
+      "expressions": {"CH_LINYE_01": "pain"},
+      "action_en": "Close on Lin Ye's face as he touches his bruised left cheek with a gloved hand, breathes through the pain, then looks up at the pitcher.",
+      "action_zh": "特写：林野用戴手套的手碰了碰左脸淤青，忍痛呼吸，然后抬眼看向投手。",
+      "dialogue": [
+        {"line_id": "L01-02", "character_id": "CH_LINYE_01", "text": "再来。", "delivery": "气声，几乎听不见"}
+      ],
+      "sfx": [
+        {"sfx_id": "SFX_BREATH", "desc": "压住的呼吸", "at_sec": 0.0},
+        {"sfx_id": "SFX_CROWD_HUSH", "desc": "观众安静下来", "at_sec": 2.5}
+      ],
+      "continuity": {
+        "from_shot": "E01-003",
+        "state_delta": {
+          "CH_LINYE_01": {
+            "wardrobe_state": "home_injured",
+            "add_injuries": ["bruise on left cheek", "small cut on lower lip"],
+            "remove_injuries": [],
+            "add_props": [],
+            "remove_props": []
+          }
+        },
+        "notes": "新增伤情：左脸淤青、下唇破口；右袖撕裂；球棒仍在手中。"
+      },
+      "keyframes": {"first": null, "last": null},
+      "reference_overrides": [],
+      "mode_hint": "auto",
+      "risk_level": "high",
+      "status": "pending",
+      "notes": "高风险特写：伤情从这里开始，下一镜必须延续。"
+    },
+    {
+      "shot_id": "E01-005",
+      "scene_id": "SC02_BATTERBOX_DUSK",
+      "duration_sec": 8,
+      "shot_size": "大远景",
+      "camera_move": "升",
+      "character_ids": ["CH_LINYE_01"],
+      "expressions": {"CH_LINYE_01": "determined"},
+      "action_en": "Lin Ye stands alone in the batter's box and raises the bat against the sunset, torn sleeve and bruised face visible, dust drifting across the empty diamond.",
+      "action_zh": "林野独自站在打击区，在夕阳里举起球棒，撕裂的袖口和淤青的脸清晰可见，尘土掠过空荡的内野。",
+      "dialogue": [],
+      "sfx": [
+        {"sfx_id": "SFX_WIND", "desc": "旷场风声", "at_sec": 0.0},
+        {"sfx_id": "SFX_BAT_RAISE", "desc": "球棒举起", "at_sec": 3.0}
+      ],
+      "continuity": {
+        "from_shot": "E01-004",
+        "state_delta": {},
+        "notes": "伤情、撕裂球衣、球棒全部延续；黄昏光保持一致。"
+      },
+      "keyframes": {"first": null, "last": null},
+      "reference_overrides": [],
+      "mode_hint": "auto",
+      "risk_level": "medium",
+      "status": "pending",
+      "notes": "收尾镜头：同一套角色状态，不做无解释重置。"
+    }
+  ]
+}

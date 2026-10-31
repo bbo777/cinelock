@@ -1,0 +1,173 @@
+{
+  "schema_version": "1.0",
+  "notes": "参考图唯一索引。asset_id 只能在这里定义；角色卡、时间线、编译结果都引用 asset_id，不允许各模型各维护一套路径。status: draft（占位） / approved（可用） / locked（量产锁定）。public_url 供 Quota-Flow 的 API 型厂商使用，必须是公网 https。",
+  "root": "refs",
+  "assets": [
+    {
+      "asset_id": "REF_LINYE_FRONT_V01",
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "view": "front",
+      "expression": "neutral",
+      "wardrobe_state": "home_clean",
+      "path": "refs/characters/linye/linye_front_v01.png",
+      "status": "draft",
+      "version": "v01",
+      "sha256": "e31a9a93e9f636cc807e200ef637254282c5e6b7a9cf99b2d2fad8061746562d",
+      "width": 768,
+      "height": 1024,
+      "public_url": null,
+      "tags": [
+        "identity_anchor",
+        "face",
+        "front"
+      ],
+      "notes": "占位图：正面身份锚点。替换为正式角色三视图后改 status=approved/locked。"
+    },
+    {
+      "asset_id": "REF_LINYE_3Q_V01",
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "view": "three_quarter",
+      "expression": "neutral",
+      "wardrobe_state": "home_clean",
+      "path": "refs/characters/linye/linye_3q_v01.png",
+      "status": "draft",
+      "version": "v01",
+      "sha256": "0c1b256d45833af6a7f4dcd09ab81734758da13086672386cefd4e5286e1df53",
+      "width": 768,
+      "height": 1024,
+      "public_url": null,
+      "tags": [
+        "geometry",
+        "face",
+        "three_quarter"
+      ],
+      "notes": "占位图：3/4 侧面，用于脸型与发量约束。"
+    },
+    {
+      "asset_id": "REF_LINYE_EXPR_DETERMINED_V01",
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "view": "front",
+      "expression": "determined",
+      "wardrobe_state": "home_clean",
+      "path": "refs/characters/linye/linye_expr_determined_v01.png",
+      "status": "draft",
+      "version": "v01",
+      "sha256": "93d84cc5fbc485836bcefa55d882b21754d01a02d2581d93a616cddd2c261b2a",
+      "width": 768,
+      "height": 1024,
+      "public_url": null,
+      "tags": [
+        "expression",
+        "determined"
+      ],
+      "notes": "占位图：坚定表情。"
+    },
+    {
+      "asset_id": "REF_LINYE_EXPR_PAIN_V01",
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "view": "front",
+      "expression": "pain",
+      "wardrobe_state": "home_clean",
+      "path": "refs/characters/linye/linye_expr_pain_v01.png",
+      "status": "draft",
+      "version": "v01",
+      "sha256": "c4e42e97d9a89164b010003e6f0ad0f0667d82f7b52ed8344b0bc0cbe5e07d03",
+      "width": 768,
+      "height": 1024,
+      "public_url": null,
+      "tags": [
+        "expression",
+        "pain"
+      ],
+      "notes": "占位图：疼痛表情。"
+    },
+    {
+      "asset_id": "REF_LINYE_DIRTY_V01",
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "view": "front",
+      "expression": "determined",
+      "wardrobe_state": "home_dirty",
+      "path": "refs/characters/linye/linye_dirty_v01.png",
+      "status": "draft",
+      "version": "v01",
+      "sha256": "e8c68b6e43b243e58f2510dd1d7d49e7e3ca1291f8d79aa8a1c6f38d9c06abeb",
+      "width": 768,
+      "height": 1024,
+      "public_url": null,
+      "tags": [
+        "wardrobe",
+        "dirty"
+      ],
+      "notes": "占位图：泥污球衣状态。"
+    },
+    {
+      "asset_id": "REF_LINYE_INJURED_V01",
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "view": "front",
+      "expression": "pain",
+      "wardrobe_state": "home_injured",
+      "path": "refs/characters/linye/linye_injured_v01.png",
+      "status": "draft",
+      "version": "v01",
+      "sha256": "b9ec09d0ad8b03b55b3de5aad75a505e654d7b6d0f2a1753649bca9bff4104d1",
+      "width": 768,
+      "height": 1024,
+      "public_url": null,
+      "tags": [
+        "wardrobe",
+        "injured"
+      ],
+      "notes": "占位图：受伤状态（左脸淤青、下唇破口、右袖撕裂）。"
+    },
+    {
+      "asset_id": "REF_SC01_DUGUET_DUSK_V01",
+      "kind": "scene",
+      "character_id": null,
+      "scene_id": "SC01_DUGUET_DUSK",
+      "view": null,
+      "expression": null,
+      "wardrobe_state": null,
+      "path": "refs/scenes/sc01_dugout_dusk_v01.png",
+      "status": "draft",
+      "version": "v01",
+      "sha256": "bbf33ac64d24d322bfa92c6b563134368c0d6f6030d5a6459e886751d8ed3982",
+      "width": 1280,
+      "height": 720,
+      "public_url": null,
+      "tags": [
+        "scene",
+        "dugout",
+        "dusk"
+      ],
+      "notes": "占位图：黄昏休息区。"
+    },
+    {
+      "asset_id": "REF_SC02_BATTERBOX_DUSK_V01",
+      "kind": "scene",
+      "character_id": null,
+      "scene_id": "SC02_BATTERBOX_DUSK",
+      "view": null,
+      "expression": null,
+      "wardrobe_state": null,
+      "path": "refs/scenes/sc02_batterbox_dusk_v01.png",
+      "status": "draft",
+      "version": "v01",
+      "sha256": "a1a8c9c2cc7d1e6dac245e3a5560401155eaa4dda1fc8c81730ce23b6c6469f4",
+      "width": 1280,
+      "height": 720,
+      "public_url": null,
+      "tags": [
+        "scene",
+        "batter_box",
+        "dusk"
+      ],
+      "notes": "占位图：黄昏打击区。"
+    }
+  ]
+}

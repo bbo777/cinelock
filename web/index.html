@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="NineFlow 是 AI 视频工业化的连续性基础设施：用上下文哈希锁、state_delta 快照和生成账本，约束概率模型的漂移并保留可追溯性。">
+  <title>NineFlow · 九局下半 · AI 视频连续性基础设施</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="field-grain" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><span>9</span><i></i><span>F</span></div>
+      <div class="brand-copy">
+        <div class="eyebrow">NINEFLOW / CONTINUITY INFRASTRUCTURE</div>
+        <h1>九局下半 <span>连续性基础设施</span></h1>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="rev-chip" id="rev-chip" title="所有厂商共用同一个 context_revision">
+        <span class="pulse" id="pack-pulse"></span>
+        <span class="rev-label">REV</span>
+        <code id="rev-value">—</code>
+        <span class="pack-badge" id="pack-state">读取中</span>
+      </div>
+      <button class="btn ghost" id="btn-refresh" type="button">刷新</button>
+      <button class="btn primary" id="btn-build" type="button">重新构建</button>
+    </div>
+  </header>
+
+  <div class="banner" id="stale-banner" hidden>
+    <strong>上下文已变化</strong>
+    <span id="stale-text"></span>
+    <button class="btn tiny" id="btn-build-stale" type="button">立即重建</button>
+  </div>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow" id="episode-label">EPISODE</div>
+      <h2 id="project-title">九局下半</h2>
+      <p id="project-logline"></p>
+      <div class="hero-tags" id="hero-tags"></div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="env-strip" id="env-strip" aria-label="运行环境"></section>
+
+  <main class="workspace">
+    <aside class="timeline-panel">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow">TIMELINE</span>
+          <h3>连续性时间线</h3>
+        </div>
+        <span class="count" id="shot-count">—</span>
+      </div>
+      <div class="timeline" id="timeline">
+        <div class="skeleton">读取上下文…</div>
+      </div>
+      <p class="timeline-note">角色卡、参考图、时间线是唯一事实源。任一文件变化都会生成新修订，所有厂商一起重编译。</p>
+    </aside>
+
+    <section class="shot-panel">
+      <div class="shot-head">
+        <div class="shot-heading">
+          <div class="eyebrow" id="shot-eyebrow">SHOT</div>
+          <h2 id="shot-title">选择镜头</h2>
+          <p class="shot-action" id="shot-action"></p>
+        </div>
+        <div class="shot-meta" id="shot-meta"></div>
+      </div>
+
+      <div class="continuity-card" id="continuity-card"></div>
+
+      <div class="provider-head">
+        <div>
+          <span class="eyebrow">PROVIDER MATRIX</span>
+          <h3>同一上下文 · 多厂商适配</h3>
+        </div>
+        <div class="provider-legend" aria-label="状态图例">
+          <span><i class="dot ready"></i>可执行</span>
+          <span><i class="dot warning"></i>有告警</span>
+          <span><i class="dot needs_public_url"></i>待公网 URL</span>
+        </div>
+      </div>
+
+      <div class="provider-wrap">
+        <table class="provider-table">
+          <thead>
+            <tr>
+              <th>厂商</th>
+              <th>适配模式</th>
+              <th>时长</th>
+              <th>参考</th>
+              <th>编译状态</th>
+              <th class="right">操作</th>
+            </tr>
+          </thead>
+          <tbody id="provider-rows"></tbody>
+        </table>
+      </div>
+
+      <div class="panel-actions">
+        <span class="hint">mock 生成占位底板视频；handoff 导出可喂给任意模型的手工包。</span>
+        <div class="action-group">
+          <button class="btn ghost" id="btn-run-mock-dry" type="button">全部镜头演练</button>
+          <button class="btn primary" id="btn-run-mock-all" type="button">全部镜头 mock 生成</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="jobs-panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">JOB LEDGER</span>
+        <h3>任务账本</h3>
+      </div>
+      <div class="panel-head-actions">
+        <span class="count" id="job-count">0</span>
+        <button class="btn ghost small" id="btn-jobs-refresh" type="button">刷新</button>
+      </div>
+    </div>
+    <div class="jobs-wrap">
+      <table class="jobs-table">
+        <thead>
+          <tr>
+            <th>任务</th>
+            <th>镜头 × 厂商</th>
+            <th>模式</th>
+            <th>状态</th>
+            <th>时间</th>
+            <th>输出</th>
+            <th class="right">操作</th>
+          </tr>
+        </thead>
+        <tbody id="job-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div>
+      <span class="footer-mark">9F</span>
+      <span>连续性约束 · 上下文哈希锁 · 生成账本 · 所有厂商共享一个修订</span>
+    </div>
+    <div class="footer-links">
+      <code>python studio.py build</code>
+      <code>python studio.py run --shot E01-004 --provider mock</code>
+      <code>python studio.py handoff --shot E01-004</code>
+    </div>
+  </footer>
+
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title">
+    <div class="drawer-head">
+      <div class="drawer-copy">
+        <div class="eyebrow" id="drawer-eyebrow">VARIANT</div>
+        <h2 id="drawer-title">—</h2>
+        <div class="drawer-sub" id="drawer-sub"></div>
+      </div>
+      <button class="icon-btn" id="drawer-close" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+    <div class="drawer-actions" id="drawer-actions"></div>
+  </aside>
+
+  <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+  <div class="busy" id="busy" hidden>
+    <div class="busy-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="busy-text" id="busy-text">执行中…</div>
+      <div class="busy-sub">本机适配器正在工作，请保持页面打开</div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

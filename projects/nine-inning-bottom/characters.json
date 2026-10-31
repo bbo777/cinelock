@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "notes": "角色卡是唯一身份源。所有模型共用这里的 descriptor / invariants / wardrobe_states；参考图本身放在 reference_bank.json。",
+  "characters": [
+    {
+      "character_id": "CH_LINYE_01",
+      "name": "林野",
+      "name_en": "Lin Ye",
+      "role": "lead",
+      "is_placeholder": true,
+      "status": "draft",
+      "identity": {
+        "age": "19",
+        "gender": "male",
+        "build": "lean athletic build, 182cm",
+        "face": "angular face, sharp dark eyes, straight nose, faint scar over the right eyebrow",
+        "hair": "short black hair, slightly messy from sweat",
+        "skin": "warm tan",
+        "distinctive": [
+          "scar over the right eyebrow",
+          "jersey number 7",
+          "black batting gloves"
+        ]
+      },
+      "descriptor_en": "Lin Ye (CH_LINYE_01), 19-year-old male baseball player, lean athletic build, short slightly messy black hair, sharp dark eyes, angular face, faint scar over his right eyebrow, warm tan skin, wearing a white home jersey with navy pinstripes and the number 7 on the back, navy cap, black batting gloves",
+      "invariants_en": [
+        "jersey number 7",
+        "scar over the right eyebrow",
+        "black batting gloves",
+        "short black hair"
+      ],
+      "negative_en": [
+        "different hair color",
+        "different jersey number",
+        "long hair",
+        "beard",
+        "tattoos"
+      ],
+      "default_wardrobe_state": "home_clean",
+      "wardrobe_states": {
+        "home_clean": {
+          "label": "主场球衣·干净",
+          "descriptor_en": "clean white home jersey with navy pinstripes and the number 7, crisp navy cap, clean white pants",
+          "refs": ["REF_LINYE_FRONT_V01", "REF_LINYE_3Q_V01"]
+        },
+        "home_dirty": {
+          "label": "主场球衣·泥污",
+          "descriptor_en": "white home jersey stained with infield dirt and sweat, navy cap slightly askew, muddy knees",
+          "refs": ["REF_LINYE_DIRTY_V01"]
+        },
+        "home_injured": {
+          "label": "主场球衣·受伤",
+          "descriptor_en": "dirty white home jersey, right sleeve torn at the elbow, bruised left cheek, small cut on the lower lip",
+          "refs": ["REF_LINYE_INJURED_V01"]
+        }
+      },
+      "expression_refs": {
+        "neutral": ["REF_LINYE_FRONT_V01"],
+        "determined": ["REF_LINYE_EXPR_DETERMINED_V01"],
+        "pain": ["REF_LINYE_EXPR_PAIN_V01"]
+      },
+      "refs": {
+        "identity_anchor": ["REF_LINYE_FRONT_V01"],
+        "geometry": ["REF_LINYE_3Q_V01"],
+        "turnaround": ["REF_LINYE_FRONT_V01", "REF_LINYE_3Q_V01"]
+      },
+      "initial_state": {
+        "wardrobe_state": "home_clean",
+        "injuries": [],
+        "props": ["wooden baseball bat"]
+      },
+      "voice": {
+        "voice_id": "VOICE_LINYE_PLACEHOLDER",
+        "timbre": "low, slightly hoarse",
+        "pace": "measured"
+      },
+      "continuity_rules": [
+        "jersey number 7 must remain readable whenever the back is visible",
+        "dirt, injuries and the wooden bat persist across shots once introduced",
+        "hair may become messier from sweat but color and length must not change"
+      ],
+      "notes": "占位角色。正式设定到位后替换 identity / descriptor / 参考图；不要同时保留两套角色卡。"
+    }
+  ]
+}

@@ -1,0 +1,266 @@
+{
+  "schema_version": "1.0",
+  "notes": "统一模型能力矩阵。modes 只使用 text2video / img2video / multi_ref / first_last 四种；img2video 的单图语义是首帧，first_last 固定两张。max_refs 仅约束 multi_ref；img2video 固定 1 张，first_last 固定 2 张。修改后 context revision 会变化。",
+  "providers": {
+    "mock": {
+      "display_name": "Mock（本地演练）",
+      "kind": "mock",
+      "cli_provider_id": null,
+      "modes": [
+        "text2video",
+        "img2video",
+        "multi_ref",
+        "first_last"
+      ],
+      "max_refs": 10,
+      "durations": [
+        3,
+        4,
+        5,
+        6,
+        8,
+        10
+      ],
+      "supports_negative_prompt": true,
+      "supports_seed": true,
+      "ref_semantics": "ordered_multi_reference",
+      "prompt_suffix": "consistent character identity, stable face, natural motion, no character drift",
+      "cli_mode_map": {},
+      "notes": "只校验、编译并生成占位视频，不消耗任何厂商额度。"
+    },
+    "handoff": {
+      "display_name": "手工交接包（任意模型）",
+      "kind": "handoff",
+      "cli_provider_id": null,
+      "modes": [
+        "text2video",
+        "img2video",
+        "multi_ref",
+        "first_last"
+      ],
+      "max_refs": 10,
+      "durations": [
+        3,
+        4,
+        5,
+        6,
+        8,
+        10
+      ],
+      "supports_negative_prompt": true,
+      "supports_seed": true,
+      "ref_semantics": "ordered_multi_reference",
+      "prompt_suffix": "consistent character identity, stable face, natural motion, no character drift",
+      "cli_mode_map": {},
+      "notes": "把同一套提示词、参考图和参数导出为文件夹，供任意模型手工上传。"
+    },
+    "doubao": {
+      "display_name": "豆包",
+      "kind": "quota_flow_webview",
+      "cli_provider_id": "doubao",
+      "cli_available": false,
+      "enabled": false,
+      "modes": [
+        "text2video",
+        "img2video"
+      ],
+      "max_refs": 1,
+      "durations": [
+        5,
+        10
+      ],
+      "supports_negative_prompt": false,
+      "supports_seed": false,
+      "ref_semantics": "first_frame",
+      "prompt_suffix": "preserve character identity, stable face, no face morphing, natural motion",
+      "cli_mode_map": {
+        "text2video": "text2video",
+        "img2video": "img2video"
+      },
+      "notes": "当前 Quota-Flow CLI 0.1.0 未注册此厂商，默认不参与 build；以下能力为规划。只有文生/图生视频；图生视频的单图是首帧。无首帧时角色一致性弱，编译器会退回 text2video 并告警。"
+    },
+    "qwenwan": {
+      "display_name": "千问·通义万相",
+      "kind": "quota_flow_webview",
+      "cli_provider_id": "qwenwan",
+      "cli_available": true,
+      "modes": [
+        "text2video",
+        "img2video"
+      ],
+      "max_refs": 1,
+      "durations": [
+        5
+      ],
+      "supports_negative_prompt": false,
+      "supports_seed": false,
+      "ref_semantics": "first_frame",
+      "prompt_suffix": "preserve character identity, stable face, natural motion, no character drift",
+      "cli_mode_map": {
+        "text2video": "text2video",
+        "img2video": "img2video"
+      },
+      "notes": "已安装的 Quota-Flow CLI 0.1.0 只注册 qwenwan 的 text2video/img2video，单图首帧；README 中的多参考/首尾帧尚未在 CLI 落地。"
+    },
+    "yuanbao": {
+      "display_name": "腾讯元宝·混元",
+      "kind": "quota_flow_webview",
+      "cli_provider_id": "yuanbao",
+      "cli_available": true,
+      "modes": [
+        "text2video",
+        "img2video"
+      ],
+      "max_refs": 1,
+      "durations": [
+        5
+      ],
+      "supports_negative_prompt": false,
+      "supports_seed": false,
+      "ref_semantics": "first_frame",
+      "prompt_suffix": "preserve character identity, stable face, natural motion",
+      "cli_mode_map": {
+        "text2video": "text2video",
+        "img2video": "img2video"
+      },
+      "notes": "已安装的 Quota-Flow CLI 0.1.0 支持 text2video/img2video 与单图首帧；固定 5 秒。"
+    },
+    "dola": {
+      "display_name": "Dola（Dreamina Seedance）",
+      "kind": "quota_flow_webview",
+      "cli_provider_id": "dola",
+      "cli_available": false,
+      "enabled": false,
+      "modes": [
+        "multi_ref"
+      ],
+      "max_refs": 10,
+      "durations": [
+        5,
+        10
+      ],
+      "supports_negative_prompt": false,
+      "supports_seed": false,
+      "ref_semantics": "ordered_multi_reference",
+      "prompt_suffix": "multi-reference consistency, preserve face identity, physically plausible interaction, no character drift",
+      "cli_mode_map": {
+        "multi_ref": "imgs2video"
+      },
+      "notes": "当前 Quota-Flow CLI 0.1.0 未注册此厂商，默认不参与 build；以下能力为规划。只做多参考生成，必须上传素材图；最多 10 张。"
+    },
+    "zhipu": {
+      "display_name": "智谱·清影 / Vidu",
+      "kind": "quota_flow_api",
+      "cli_provider_id": "zhipu",
+      "cli_available": false,
+      "enabled": false,
+      "modes": [
+        "text2video",
+        "img2video",
+        "multi_ref",
+        "first_last"
+      ],
+      "max_refs": 5,
+      "durations": [
+        4,
+        5,
+        10
+      ],
+      "supports_negative_prompt": false,
+      "supports_seed": true,
+      "ref_semantics": "ordered_multi_reference",
+      "prompt_suffix": "consistent character identity, stable face, natural motion",
+      "cli_mode_map": {
+        "text2video": "text2video",
+        "img2video": "img2video",
+        "multi_ref": "imgs2video",
+        "first_last": "imgs2video"
+      },
+      "notes": "当前 Quota-Flow CLI 0.1.0 未注册此厂商，默认不参与 build；以下能力为规划。开放平台 API Key；图片必须是公网 https URL。不同模型支持的模式不同，编译前请确认绑定模型。"
+    },
+    "volcengine": {
+      "display_name": "火山方舟（Seedance）",
+      "kind": "quota_flow_api",
+      "cli_provider_id": "volcengine",
+      "cli_available": false,
+      "enabled": false,
+      "modes": [
+        "text2video",
+        "img2video"
+      ],
+      "max_refs": 1,
+      "durations": [
+        5,
+        10
+      ],
+      "supports_negative_prompt": false,
+      "supports_seed": true,
+      "ref_semantics": "first_frame",
+      "prompt_suffix": "preserve character identity, stable face, natural motion",
+      "cli_mode_map": {
+        "text2video": "text2video",
+        "img2video": "img2video"
+      },
+      "notes": "当前 Quota-Flow CLI 0.1.0 未注册此厂商，默认不参与 build；以下能力为规划。开放平台 API Key；免费视频模型按次；图片必须是公网 https URL。"
+    },
+    "bailian": {
+      "display_name": "阿里云百炼（万相）",
+      "kind": "quota_flow_api",
+      "cli_provider_id": "bailian",
+      "cli_available": false,
+      "enabled": false,
+      "modes": [
+        "text2video",
+        "img2video",
+        "multi_ref",
+        "first_last"
+      ],
+      "max_refs": 5,
+      "durations": [
+        5,
+        10
+      ],
+      "supports_negative_prompt": true,
+      "supports_seed": true,
+      "ref_semantics": "ordered_multi_reference",
+      "prompt_suffix": "multi-reference consistency, preserve face identity, natural motion, no character drift",
+      "cli_mode_map": {
+        "text2video": "text2video",
+        "img2video": "img2video",
+        "multi_ref": "imgs2video",
+        "first_last": "imgs2video"
+      },
+      "notes": "当前 Quota-Flow CLI 0.1.0 未注册此厂商，默认不参与 build；以下能力为规划。开放平台 API Key；万相 2.7 支持多参考与首尾帧；图片必须是公网 https URL。"
+    },
+    "tokenhub": {
+      "display_name": "腾讯云 TokenHub（混元）",
+      "kind": "quota_flow_api",
+      "cli_provider_id": "tokenhub",
+      "cli_available": false,
+      "enabled": false,
+      "modes": [
+        "text2video",
+        "img2video"
+      ],
+      "max_refs": 1,
+      "durations": [
+        5
+      ],
+      "supports_negative_prompt": false,
+      "supports_seed": false,
+      "ref_semantics": "first_frame",
+      "prompt_suffix": "preserve character identity, stable face, natural motion",
+      "cli_mode_map": {
+        "text2video": "text2video",
+        "img2video": "img2video"
+      },
+      "notes": "当前 Quota-Flow CLI 0.1.0 未注册此厂商，默认不参与 build；以下能力为规划。开放平台 API Key；按积分计费；图片必须是公网 https URL。"
+    }
+  },
+  "ui_order": [
+    "mock",
+    "qwenwan",
+    "yuanbao",
+    "handoff"
+  ]
+}

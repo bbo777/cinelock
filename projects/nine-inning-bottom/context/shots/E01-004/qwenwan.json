@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0",
+  "shot_id": "E01-004",
+  "episode_id": "E01",
+  "scene_id": "SC02_BATTERBOX_DUSK",
+  "provider_id": "qwenwan",
+  "provider": {
+    "id": "qwenwan",
+    "display_name": "千问·通义万相",
+    "kind": "quota_flow_webview",
+    "cli_provider_id": "qwenwan",
+    "cli_available": true,
+    "enabled": true,
+    "modes": [
+      "text2video",
+      "img2video"
+    ],
+    "max_refs": 1,
+    "durations": [
+      5
+    ],
+    "ref_semantics": "first_frame",
+    "supports_negative_prompt": false,
+    "supports_seed": false
+  },
+  "mode": "img2video",
+  "mode_label": "图生视频（单图首帧）",
+  "mode_reason": "自动：厂商只支持单图图生视频，用身份锚点或首帧作为首帧",
+  "mode_instruction": "Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant.",
+  "duration_sec": 5,
+  "requested_duration_sec": 5,
+  "duration_choice": "exact",
+  "aspect_ratio": "16:9",
+  "resolution": "1920x1080",
+  "fps": 24,
+  "seed": 203643131,
+  "seed_supported": false,
+  "candidate_index": 0,
+  "prompt": "cinematic 2D anime, hand-drawn cel animation, visible ink line work, flat color with subtle gradient, slight film grain, restrained warm palette, sports drama staging, 16:9 composition. Lin Ye (CH_LINYE_01): 19-year-old male baseball player, lean athletic build, short slightly messy black hair, sharp dark eyes, angular face, faint scar over his right eyebrow, warm tan skin, wearing a white home jersey with navy pinstripes and the number 7 on the back, navy cap, black batting gloves. Current wardrobe: dirty white home jersey, right sleeve torn at the elbow, bruised left cheek, small cut on the lower lip. Expression: pain. Visible injuries: bruise on left cheek, small cut on lower lip. Props in hand: wooden baseball bat. Identity invariants: jersey number 7; scar over the right eyebrow; black batting gloves; short black hair. Scene: worn dirt batter's box in an old high-school baseball field, dusk. Lighting: golden-hour backlight from the outfield, dust haze, rim light on the batter, deep blue sky. Composition: batter's box centered, diamond receding into dust haze, low horizon. Shot: tight close-up, face fills frame. Camera: static camera, locked-off. Action: Close on Lin Ye's face as he touches his bruised left cheek with a gloved hand, breathes through the pain, then looks up at the pitcher. Performance: the character speaks a short, restrained line; audio is added in post; no on-screen text. Continuity: this shot follows E01-003. Changes: Lin Ye: wardrobe home_dirty -> home_injured; injury + bruise on left cheek; injury + small cut on lower lip. All listed dirt, injuries and props persist into later shots. Reference images, in order: [1] Lin Ye — identity anchor used as first frame. Animate from the first-frame still in [1]. Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant. clean line art, consistent character design, stable face, natural weight, no morphing, no character drift. preserve character identity, stable face, natural motion, no character drift. Avoid: different hair color, different jersey number, long hair, beard, tattoos, photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs.",
+  "prompt_chars": 2338,
+  "prompt_sha256": "27ae678aa1ce95b47e0509a6a5556e4f23cdcfe9efe55443912c35e222c5655b",
+  "negative_prompt": "photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs, duplicate face, cross-eyed, text, subtitle, watermark, logo, UI, frame border, oversaturated, neon, lens flare, character drift, face swap, aging, different hair color, different jersey number, long hair, beard, tattoos",
+  "negative_sha256": "00aa0306d91f63ddccd1e04d10f70d00a24b7c89c665a7d6a2d3d8a7b7dd91d8",
+  "negative_mode": "inline",
+  "negative_inline": "Avoid: different hair color, different jersey number, long hair, beard, tattoos, photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs.",
+  "reference_legend": "Reference images, in order: [1] Lin Ye — identity anchor used as first frame. Animate from the first-frame still in [1].",
+  "references": [
+    {
+      "order": 1,
+      "asset_id": "REF_LINYE_FRONT_V01",
+      "role": "identity_first_frame",
+      "role_label": "identity first frame",
+      "label": "Lin Ye — identity anchor used as first frame",
+      "priority": 0,
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "scene_id": null,
+      "view": "front",
+      "expression": "neutral",
+      "wardrobe_state": "home_clean",
+      "path": "refs/characters/linye/linye_front_v01.png",
+      "sha256": "e31a9a93e9f636cc807e200ef637254282c5e6b7a9cf99b2d2fad8061746562d",
+      "public_url": null,
+      "width": 768,
+      "height": 1024,
+      "status": "draft",
+      "version": "v01"
+    }
+  ],
+  "reference_count": 1,
+  "dropped_references": [
+    {
+      "asset_id": "REF_LINYE_3Q_V01",
+      "label": "Lin Ye — geometry reference",
+      "role": "geometry",
+      "reason": "single_image_mode"
+    },
+    {
+      "asset_id": "REF_LINYE_EXPR_PAIN_V01",
+      "label": "Lin Ye — expression: pain",
+      "role": "expression",
+      "reason": "single_image_mode"
+    },
+    {
+      "asset_id": "REF_LINYE_INJURED_V01",
+      "label": "Lin Ye — injury state (home_injured)",
+      "role": "injury",
+      "reason": "single_image_mode"
+    },
+    {
+      "asset_id": "REF_SC02_BATTERBOX_DUSK_V01",
+      "label": "Scene — SC02_BATTERBOX_DUSK (dusk)",
+      "role": "scene",
+      "reason": "single_image_mode"
+    }
+  ],
+  "continuity": {
+    "from_shot": "E01-003",
+    "notes": "新增伤情：左脸淤青、下唇破口；右袖撕裂；球棒仍在手中。",
+    "changes": {
+      "CH_LINYE_01": [
+        "wardrobe home_dirty -> home_injured",
+        "injury + bruise on left cheek",
+        "injury + small cut on lower lip"
+      ]
+    },
+    "characters": {
+      "CH_LINYE_01": {
+        "wardrobe_state": "home_injured",
+        "injuries": [
+          "bruise on left cheek",
+          "small cut on lower lip"
+        ],
+        "props": [
+          "wooden baseball bat"
+        ],
+        "expression": "pain"
+      }
+    },
+    "scene": {
+      "scene_id": "SC02_BATTERBOX_DUSK",
+      "label": "打击区 · 黄昏",
+      "location_en": "worn dirt batter's box in an old high-school baseball field",
+      "time_of_day": "dusk",
+      "lighting_en": "golden-hour backlight from the outfield, dust haze, rim light on the batter, deep blue sky",
+      "composition_en": "batter's box centered, diamond receding into dust haze, low horizon",
+      "refs": [
+        "REF_SC02_BATTERBOX_DUSK_V01"
+      ]
+    }
+  },
+  "dialogue": [
+    {
+      "line_id": "L01-02",
+      "character_id": "CH_LINYE_01",
+      "text": "再来。",
+      "delivery": "气声，几乎听不见"
+    }
+  ],
+  "sfx": [
+    {
+      "sfx_id": "SFX_BREATH",
+      "desc": "压住的呼吸",
+      "at_sec": 0.0
+    },
+    {
+      "sfx_id": "SFX_CROWD_HUSH",
+      "desc": "观众安静下来",
+      "at_sec": 2.5
+    }
+  ],
+  "dispatch": {
+    "adapter": "quota_flow",
+    "quota_flow_provider": "qwenwan",
+    "quota_flow_mode": "img2video",
+    "requires_public_urls": true,
+    "image_urls": [],
+    "missing_public_urls": [
+      "REF_LINYE_FRONT_V01"
+    ],
+    "non_https_public_urls": [],
+    "ready": false,
+    "block_reasons": [
+      "缺少 public_url：REF_LINYE_FRONT_V01"
+    ]
+  },
+  "warnings": [
+    {
+      "code": "W_IDENTITY_AS_FIRST_FRAME",
+      "message": "没有首帧关键帧，使用 Lin Ye 的身份锚点作为首帧；背景和姿势需由提示词重建"
+    },
+    {
+      "code": "W_NEGATIVE_INLINE",
+      "message": "厂商不支持独立负向提示词，已把角色负向词并入正向提示词（Avoid: ...）"
+    },
+    {
+      "code": "W_PUBLIC_URL_MISSING",
+      "message": "1 张参考图缺少 public_url；Quota-Flow 生成前需要补公网 https URL"
+    }
+  ],
+  "blockers": [],
+  "context_revision": "3363f8fde6e766840b637a4baf551e6318637894c4fb57906fc58f558212d318",
+  "short_revision": "3363f8fde6e7",
+  "compiled_at": "2026-10-31T12:56:46Z",
+  "variant_sha256": "878925a7127bc0f0115affdea2a342e5f7cff5f5628f78a993a455bdb5d93cf9"
+}

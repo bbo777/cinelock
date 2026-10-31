@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "project_id": "nine-inning-bottom",
+  "title": "九局下半",
+  "subtitle": "占位骨架 · 待正式设定替换",
+  "status": "placeholder",
+  "notes": "这是可跑通的占位项目。角色、场景、台词均为演示数据；替换 characters.json / reference_bank.json / timeline.json 后运行 build 即可生成新的上下文版本。",
+  "format": {
+    "aspect_ratio": "16:9",
+    "resolution": "1920x1080",
+    "fps": 24,
+    "shot_duration_range_sec": [3, 15]
+  },
+  "style": {
+    "anchor": "cinematic 2D anime, hand-drawn cel animation, visible ink line work, flat color with subtle gradient, slight film grain, restrained warm palette, sports drama staging, 16:9 composition",
+    "quality_suffix": "clean line art, consistent character design, stable face, natural weight, no morphing, no character drift",
+    "negative_base": "photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs, duplicate face, cross-eyed, text, subtitle, watermark, logo, UI, frame border, oversaturated, neon, lens flare, character drift, face swap, aging",
+    "palette": "dusk amber, deep navy, dusty white, muted teal",
+    "style_refs": []
+  },
+  "world": {
+    "logline": "九局下半，落后一分，最后一棒。",
+    "setting": "高中棒球决赛，黄昏的旧球场。",
+    "rules": [
+      "林野的主场球衣号码固定为 7。",
+      "泥污、伤情、球棒等状态必须跨镜延续，不能无解释重置。",
+      "所有镜头共享同一套角色卡与参考图版本。"
+    ]
+  },
+  "prompt": {
+    "language": "en",
+    "include_reference_legend": true,
+    "max_chars": 2600
+  },
+  "defaults": {
+    "provider": "mock",
+    "fallback": ["qwenwan", "dola", "bailian", "doubao"],
+    "candidates_per_shot": 2,
+    "strategy": "quality_first"
+  },
+  "provider_overrides": {},
+  "characters_file": "characters.json",
+  "reference_bank_file": "reference_bank.json",
+  "timeline_file": "timeline.json"
+}

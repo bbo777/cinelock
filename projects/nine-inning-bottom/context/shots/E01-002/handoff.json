@@ -1,0 +1,225 @@
+{
+  "schema_version": "1.0",
+  "shot_id": "E01-002",
+  "episode_id": "E01",
+  "scene_id": "SC01_DUGUET_DUSK",
+  "provider_id": "handoff",
+  "provider": {
+    "id": "handoff",
+    "display_name": "手工交接包（任意模型）",
+    "kind": "handoff",
+    "cli_provider_id": null,
+    "cli_available": true,
+    "enabled": true,
+    "modes": [
+      "text2video",
+      "img2video",
+      "multi_ref",
+      "first_last"
+    ],
+    "max_refs": 10,
+    "durations": [
+      3,
+      4,
+      5,
+      6,
+      8,
+      10
+    ],
+    "ref_semantics": "ordered_multi_reference",
+    "supports_negative_prompt": true,
+    "supports_seed": true
+  },
+  "mode": "multi_ref",
+  "mode_label": "多参考图",
+  "mode_reason": "自动：厂商支持多参考，选用 5 张共享参考图",
+  "mode_instruction": "Combine the references to keep the same character identity, current wardrobe, injuries and scene across the shot; the action must not change the face or the signature details.",
+  "duration_sec": 6,
+  "requested_duration_sec": 6,
+  "duration_choice": "exact",
+  "aspect_ratio": "16:9",
+  "resolution": "1920x1080",
+  "fps": 24,
+  "seed": 2128784055,
+  "seed_supported": true,
+  "candidate_index": 0,
+  "prompt": "cinematic 2D anime, hand-drawn cel animation, visible ink line work, flat color with subtle gradient, slight film grain, restrained warm palette, sports drama staging, 16:9 composition. Lin Ye (CH_LINYE_01): 19-year-old male baseball player, lean athletic build, short slightly messy black hair, sharp dark eyes, angular face, faint scar over his right eyebrow, warm tan skin, wearing a white home jersey with navy pinstripes and the number 7 on the back, navy cap, black batting gloves. Current wardrobe: white home jersey stained with infield dirt and sweat, navy cap slightly askew, muddy knees. Expression: determined. Visible injuries: none. Props in hand: wooden baseball bat. Identity invariants: jersey number 7; scar over the right eyebrow; black batting gloves; short black hair. Scene: old high-school baseball dugout, dusk. Lighting: low warm sunset raking across the dugout, long shadows, dust in the air, deep blue ambient shadows. Composition: dugout roof frames the character on the left third, empty field receding behind. Shot: close-up, shoulders up. Camera: handheld, slight shake. Action: Lin Ye rises from the bench, dust and infield dirt smearing his white jersey as he grabs his bat, jaw set. Performance: the character speaks a short, restrained line; audio is added in post; no on-screen text. Continuity: this shot follows E01-001. Changes: Lin Ye: wardrobe home_clean -> home_dirty. All listed dirt, injuries and props persist into later shots. Reference images, in order: [1] Lin Ye — identity anchor (front view); [2] Lin Ye — geometry reference; [3] Lin Ye — expression: determined; [4] Lin Ye — wardrobe: home_dirty; [5] Scene — SC01_DUGUET_DUSK (dusk). Use each reference only for the aspect it anchors; keep the face, hair and costume identity from [1]. Combine the references to keep the same character identity, current wardrobe, injuries and scene across the shot; the action must not change the face or the signature details. clean line art, consistent character design, stable face, natural weight, no morphing, no character drift. consistent character identity, stable face, natural motion, no character drift.",
+  "prompt_chars": 2150,
+  "prompt_sha256": "4c5e3523d5a21b31014aa07c8b0001d8e7feed76d13c24cd0ce0dd808bd13c98",
+  "negative_prompt": "photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs, duplicate face, cross-eyed, text, subtitle, watermark, logo, UI, frame border, oversaturated, neon, lens flare, character drift, face swap, aging, different hair color, different jersey number, long hair, beard, tattoos",
+  "negative_sha256": "00aa0306d91f63ddccd1e04d10f70d00a24b7c89c665a7d6a2d3d8a7b7dd91d8",
+  "negative_mode": "separate",
+  "negative_inline": "",
+  "reference_legend": "Reference images, in order: [1] Lin Ye — identity anchor (front view); [2] Lin Ye — geometry reference; [3] Lin Ye — expression: determined; [4] Lin Ye — wardrobe: home_dirty; [5] Scene — SC01_DUGUET_DUSK (dusk). Use each reference only for the aspect it anchors; keep the face, hair and costume identity from [1].",
+  "references": [
+    {
+      "order": 1,
+      "asset_id": "REF_LINYE_FRONT_V01",
+      "role": "identity",
+      "role_label": "identity",
+      "label": "Lin Ye — identity anchor (front view)",
+      "priority": 10,
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "scene_id": null,
+      "view": "front",
+      "expression": "neutral",
+      "wardrobe_state": "home_clean",
+      "path": "refs/characters/linye/linye_front_v01.png",
+      "sha256": "e31a9a93e9f636cc807e200ef637254282c5e6b7a9cf99b2d2fad8061746562d",
+      "public_url": null,
+      "width": 768,
+      "height": 1024,
+      "status": "draft",
+      "version": "v01"
+    },
+    {
+      "order": 2,
+      "asset_id": "REF_LINYE_3Q_V01",
+      "role": "geometry",
+      "role_label": "geometry",
+      "label": "Lin Ye — geometry reference",
+      "priority": 20,
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "scene_id": null,
+      "view": "three_quarter",
+      "expression": "neutral",
+      "wardrobe_state": "home_clean",
+      "path": "refs/characters/linye/linye_3q_v01.png",
+      "sha256": "0c1b256d45833af6a7f4dcd09ab81734758da13086672386cefd4e5286e1df53",
+      "public_url": null,
+      "width": 768,
+      "height": 1024,
+      "status": "draft",
+      "version": "v01"
+    },
+    {
+      "order": 3,
+      "asset_id": "REF_LINYE_EXPR_DETERMINED_V01",
+      "role": "expression",
+      "role_label": "expression",
+      "label": "Lin Ye — expression: determined",
+      "priority": 30,
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "scene_id": null,
+      "view": "front",
+      "expression": "determined",
+      "wardrobe_state": "home_clean",
+      "path": "refs/characters/linye/linye_expr_determined_v01.png",
+      "sha256": "93d84cc5fbc485836bcefa55d882b21754d01a02d2581d93a616cddd2c261b2a",
+      "public_url": null,
+      "width": 768,
+      "height": 1024,
+      "status": "draft",
+      "version": "v01"
+    },
+    {
+      "order": 4,
+      "asset_id": "REF_LINYE_DIRTY_V01",
+      "role": "wardrobe",
+      "role_label": "wardrobe",
+      "label": "Lin Ye — wardrobe: home_dirty",
+      "priority": 40,
+      "kind": "character",
+      "character_id": "CH_LINYE_01",
+      "scene_id": null,
+      "view": "front",
+      "expression": "determined",
+      "wardrobe_state": "home_dirty",
+      "path": "refs/characters/linye/linye_dirty_v01.png",
+      "sha256": "e8c68b6e43b243e58f2510dd1d7d49e7e3ca1291f8d79aa8a1c6f38d9c06abeb",
+      "public_url": null,
+      "width": 768,
+      "height": 1024,
+      "status": "draft",
+      "version": "v01"
+    },
+    {
+      "order": 5,
+      "asset_id": "REF_SC01_DUGUET_DUSK_V01",
+      "role": "scene",
+      "role_label": "scene",
+      "label": "Scene — SC01_DUGUET_DUSK (dusk)",
+      "priority": 50,
+      "kind": "scene",
+      "character_id": null,
+      "scene_id": "SC01_DUGUET_DUSK",
+      "view": null,
+      "expression": null,
+      "wardrobe_state": null,
+      "path": "refs/scenes/sc01_dugout_dusk_v01.png",
+      "sha256": "bbf33ac64d24d322bfa92c6b563134368c0d6f6030d5a6459e886751d8ed3982",
+      "public_url": null,
+      "width": 1280,
+      "height": 720,
+      "status": "draft",
+      "version": "v01"
+    }
+  ],
+  "reference_count": 5,
+  "dropped_references": [],
+  "continuity": {
+    "from_shot": "E01-001",
+    "notes": "球衣从干净变为泥污；球棒继续持有。",
+    "changes": {
+      "CH_LINYE_01": [
+        "wardrobe home_clean -> home_dirty"
+      ]
+    },
+    "characters": {
+      "CH_LINYE_01": {
+        "wardrobe_state": "home_dirty",
+        "injuries": [],
+        "props": [
+          "wooden baseball bat"
+        ],
+        "expression": "determined"
+      }
+    },
+    "scene": {
+      "scene_id": "SC01_DUGUET_DUSK",
+      "label": "休息区 · 黄昏",
+      "location_en": "old high-school baseball dugout",
+      "time_of_day": "dusk",
+      "lighting_en": "low warm sunset raking across the dugout, long shadows, dust in the air, deep blue ambient shadows",
+      "composition_en": "dugout roof frames the character on the left third, empty field receding behind",
+      "refs": [
+        "REF_SC01_DUGUET_DUSK_V01"
+      ]
+    }
+  },
+  "dialogue": [
+    {
+      "line_id": "L01-01",
+      "character_id": "CH_LINYE_01",
+      "text": "还没完。",
+      "delivery": "低声，咬住"
+    }
+  ],
+  "sfx": [
+    {
+      "sfx_id": "SFX_DUST_STEP",
+      "desc": "鞋底碾过沙土",
+      "at_sec": 1.2
+    }
+  ],
+  "dispatch": {
+    "adapter": "handoff",
+    "quota_flow_provider": null,
+    "quota_flow_mode": null,
+    "requires_public_urls": false,
+    "image_urls": [],
+    "missing_public_urls": [],
+    "non_https_public_urls": [],
+    "ready": true,
+    "block_reasons": []
+  },
+  "warnings": [],
+  "blockers": [],
+  "context_revision": "3363f8fde6e766840b637a4baf551e6318637894c4fb57906fc58f558212d318",
+  "short_revision": "3363f8fde6e7",
+  "compiled_at": "2026-10-31T12:56:46Z",
+  "variant_sha256": "9421e0da80df9ce31441935cb65b1224f1fb6dd425a81828c59d8dde3eec0581"
+}
