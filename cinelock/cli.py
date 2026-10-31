@@ -19,6 +19,7 @@ from .context_pack import (
 )
 from .dispatch import DispatchError, execute_many
 from .hashes import HashRefreshError, refresh_reference_hashes
+from .ingest import IngestError, import_external_artifact
 from .jobs import JobError, list_jobs, load_job, summarize_job
 from .media import MediaError, create_contact_sheet
 from .report import status_payload
@@ -448,6 +449,52 @@ def cmd_handoff(args: argparse.Namespace, ctx: ProjectContext) -> int:
     return _run_jobs(args, ctx, ["handoff"])
 
 
+def cmd_import(args: argparse.Namespace, ctx: ProjectContext) -> int:
+    job = import_external_artifact(
+        ctx,
+        args.shot,
+        Path(args.video),
+        model=args.model or "",
+        note=args.note or "",
+        provider_id=args.provider,
+        revision=args.revision or "",
+        prompt_hash=args.prompt_hash or "",
+    )
+    outputs = job.get("outputs") or []
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "ok": True,
+                    "job": summarize_job(job),
+                    "external": job.get("external"),
+                    "outputs": outputs,
+                    "warnings": job.get("warnings") or [],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
+    print("外部产物已导入 · %s" % job.get("job_id"))
+    print(
+        "%s × %s · 模型 %s · 修订 %s"
+        % (
+            job.get("shot_id"),
+            job.get("provider_id"),
+            (job.get("external") or {}).get("model") or "未声明",
+            job.get("short_revision"),
+        )
+    )
+    for output in outputs:
+        print("产物 %s（%s）· sha256 %s" % (output.get("path"), _format_bytes(output.get("bytes")), short_hash(output.get("sha256"))))
+    for warning in job.get("warnings") or []:
+        print("提示 %s" % warning)
+    print("下一步：python studio.py audit --id %s" % job.get("job_id"))
+    print("注意：13 项审计只核验上下文绑定与文件完整性，不判断画面连续性，也不证明生成来源。")
+    return 0
+
+
 def cmd_jobs(args: argparse.Namespace, ctx: ProjectContext) -> int:
     records = list_jobs(
         ctx,
@@ -738,6 +785,7 @@ def build_parser() -> argparse.ArgumentParser:
         "  python studio.py compile --shot E01-004 --provider mock --prompt\n"
         "  python studio.py run --shot E01-004 --provider mock\n"
         "  python studio.py handoff --shot E01-004\n"
+        "  python studio.py import --shot E01-004 --video result.mp4 --model \"Kling 2.5\"\n"
         "  python studio.py contact-sheet --job JOB_...\n"
         "  python studio.py audit --id JOB_...\n"
         "  python studio.py serve\n"
@@ -790,6 +838,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true", help="输出 JSON")
     p.set_defaults(func=cmd_handoff)
 
+    p = sub.add_parser("import", help="把外部模型生成的视频登记进任务账本并接受审计")
+    p.add_argument("--shot", required=True, help="镜头 ID，例如 E01-004")
+    p.add_argument("--video", required=True, help="外部生成的视频路径（.mp4 / .mov / .webm）")
+    p.add_argument("--model", help="实际使用的模型与版本，例如 Kling 2.5")
+    p.add_argument("--note", help="人工备注，例如参考图是否完整上传")
+    p.add_argument("--provider", default="handoff", help="登记到哪个编译变体（默认 handoff）")
+    p.add_argument("--revision", help="handoff manifest 里的 context_revision（建议填写）")
+    p.add_argument("--prompt-hash", dest="prompt_hash", help="handoff manifest 里的 prompt_sha256（建议填写）")
+    p.add_argument("--json", action="store_true", help="输出 JSON")
+    p.set_defaults(func=cmd_import)
+
     p = sub.add_parser("jobs", help="列出任务账本")
     p.add_argument("--shot", help="按镜头过滤")
     p.add_argument("--provider", help="按厂商过滤")
@@ -840,7 +899,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             Path(args.config_dir) if args.config_dir else None,
         )
         return int(args.func(args, ctx))
-    except (ContextError, PackError, DispatchError, JobError) as exc:
+    except (ContextError, PackError, DispatchError, JobError, IngestError) as exc:
         print("错误：%s" % exc, file=sys.stderr)
         return 2
     except KeyboardInterrupt:

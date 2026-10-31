@@ -19,8 +19,11 @@
 | [#8](https://github.com/bbo777/cinelock/issues/8) | 用授权资产替换占位参考图 |
 | [#9](https://github.com/bbo777/cinelock/issues/9) | 输出侧连续性核验（visual_qc） |
 | [#10](https://github.com/bbo777/cinelock/issues/10) | Quota-Flow 真机出片记录 |
+| [#11](https://github.com/bbo777/cinelock/issues/11) | 求大佬赞助算力（认领一个镜头） |
 
-> 当前事实（2026-10-31）：**1 个原创角色、2 个场景、5 个镜头、4 个启用厂商、20 个变体、56 次参考图引用**，共享修订 `9bb2cfb6449f`；**62 项测试通过**；**成片 0 个**。
+> 当前事实（2026-10-31）：**1 个原创角色、2 个场景、5 个镜头、4 个启用厂商、20 个变体、56 次参考图引用**，共享修订 `9bb2cfb6449f`；**67 项测试通过**；**成片 0 个**。
+>
+> 外部模型的结果不再只能贴在 Issue 里：用 `python studio.py import` 登记进任务账本，再用同一套 13 项审计核验。完整步骤见 [Handoff 傻瓜式操作指南](handoff-guide.md)。
 
 实际看板列：
 
@@ -37,9 +40,11 @@
 ## 领取方式
 
 1. 在 Issue 里写一句“我领取这个任务”，附上你准备使用的厂商/模型。
-2. 生成类任务不必把大视频提交进仓库：把文件放到你可公开访问的位置，在 Issue 里贴链接和下面的元数据。
-3. 配置、时间线、参考图、文档类改动走 PR；一次 PR 只做一件事。
-4. 提交前必须确认：**不含 Cookie / API Key / 登录态；素材有合法授权；mock 产物不能标成真实成片。**
+2. 优先用 `python studio.py handoff --shot <SHOT>` 导出交接包，按 `manifest.json` 的顺序上传参考图并粘贴提示词。
+3. 生成后在本地执行 `python studio.py import --shot <SHOT> --video <FILE> --model <MODEL> --revision <short_revision> --prompt-hash <prompt_sha256>`，把结果登记进账本并跑 `audit`。
+4. 大视频不必提交进仓库：把文件放到你可公开访问的位置，在 Issue 里贴任务 ID、产物链接和下面的元数据。
+5. 配置、时间线、参考图、文档类改动走 PR；一次 PR 只做一件事。
+6. 提交前必须确认：**不含 Cookie / API Key / 登录态；素材有合法授权；mock 产物不能标成真实成片。**
 
 生成类任务的回报格式：
 
@@ -115,14 +120,22 @@ examples/nine-inning-bottom/context/shots/E01-00X/
 ### 生成后的统一验收
 
 1. 下载文件用 ffprobe 检查容器、视频流、时长、分辨率（目标 1920×1080，时长允许厂商就近）。
-2. 生成 3×3 九宫格做人工对比：
+2. 把外部视频登记进任务账本（绑定当前修订与提示词哈希）：
+   ```bash
+   python studio.py import --shot E01-004 --video <FILE> \
+     --model "<MODEL>" \
+     --revision <manifest.short_revision> \
+     --prompt-hash <manifest.prompt_sha256> \
+     --note "<抽卡次数 / 失败现象>"
+   ```
+3. 生成 3×3 九宫格做人工对比：
    ```bash
    python studio.py contact-sheet --job <JOB_ID>
    ```
-3. 跑审计：`python studio.py audit --job <JOB_ID>`，证据链应为 13/13。
-4. 在 Issue 里贴产物链接、元数据和人工观察；**不要只写“效果不错”**。
+4. 跑审计：`python studio.py audit --id <JOB_ID>`，证据链应为 13/13。
+5. 在 Issue 里贴任务 ID、产物链接、元数据和人工观察；**不要只写“效果不错”**。
 
-> 提醒：审计只证明任务记录、参考图与产物仍一致，不证明像素级连续性；最终仍需人眼判断。
+> 提醒：审计只证明任务记录、参考图与产物仍一致，不证明像素级连续性；最终仍需人眼判断。完整操作见 [Handoff 傻瓜式操作指南](handoff-guide.md)。
 
 ---
 
@@ -204,7 +217,21 @@ CineLock 目前只做输入侧治理与证据链审计。我们明确**没有**�
 
 - 新厂商：在 `config/providers.json` 增加能力矩阵（参考图上限、模式、时长、seed），实现适配器，补“静默回退拒绝”测试。
 - 新 MCP 客户端：用 `cinelock_status` / `cinelock_variant` / `cinelock_audit` / `cinelock_build` 做一次只读冒烟，记录客户端版本与工具返回。
-- 验收：不破坏现有 62 项测试；新能力有文档；不泄露本地路径之外的敏感信息。
+- 验收：不破坏现有 67 项测试；新能力有文档；不泄露本地路径之外的敏感信息。
+
+---
+
+## G. 求大佬赞助算力（Issue #11）
+
+这是给“有会员、有闲置额度、愿意帮一个镜头”的人准备的入口。
+
+- 你不需要改代码：导出交接包 → 按顺序上传参考图 → 粘贴提示词 → 生成 → 回传视频。
+- 你不需要交出账号：不要把 Cookie、API Key、登录态发到 Issue 或 PR。
+- 你只需要跑一个镜头：E01-001 ~ E01-005 任选；跑失败也有价值，把失败样本和平台限制写回来。
+- 作者侧会用 `import` 把结果登记进账本，跑 13 项审计，并在 Issue 里贴出审计结论。
+- 不能做的事：绕过配额、共享账号、伪造登录态、规避平台风控。
+
+认领入口：[Issue #11 · 求大佬赞助算力](https://github.com/bbo777/cinelock/issues/11)。完整步骤见 [Handoff 傻瓜式操作指南](handoff-guide.md)。
 
 ---
 
@@ -268,6 +295,7 @@ CineLock 目前只做输入侧治理与证据链审计。我们明确**没有**�
 **镜头任务**
 
 - [ ] 产物存在，ffprobe 元数据已记录
+- [ ] 外部结果已用 `import` 绑定修订与提示词哈希
 - [ ] 参考图按顺序使用，身份锚点未省略
 - [ ] 九宫格已生成并人工检查
 - [ ] `audit` 证据链 13/13
@@ -277,7 +305,7 @@ CineLock 目前只做输入侧治理与证据链审计。我们明确**没有**�
 **代码 / 资产任务**
 
 - [ ] `validate` 与 `build` 通过
-- [ ] 62 项测试仍全绿（新增行为有测试）
+- [ ] 67 项测试仍全绿（新增行为有测试）
 - [ ] 保持 Python 3.8 兼容，默认不引入重型依赖
 - [ ] 文档明确写出能力边界，不夸大
 - [ ] 不包含凭据、登录态或未授权素材
@@ -287,6 +315,7 @@ CineLock 目前只做输入侧治理与证据链审计。我们明确**没有**�
 ## 相关入口
 
 - 演示配置：[`examples/nine-inning-bottom/`](../examples/nine-inning-bottom/)
+- Handoff 操作指南：[`docs/handoff-guide.md`](handoff-guide.md)
 - E01-004 真实交接包：[`docs/showcase/handoff-E01-004/`](showcase/handoff-E01-004/)
 - 技术长文：[`docs/hash-lock-and-state-machine.md`](hash-lock-and-state-machine.md)
 - 主 README：[`README.md`](../README.md)

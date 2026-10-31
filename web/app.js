@@ -37,6 +37,13 @@ const KIND_LABELS = {
   quota_flow_api: "API 配额",
 };
 
+const ADAPTER_LABELS = {
+  mock: "mock",
+  handoff: "handoff",
+  handoff_import: "外部导入",
+  quota_flow: "Quota-Flow",
+};
+
 const EXPR_LABELS = {
   neutral: "中性",
   determined: "坚定",
@@ -90,7 +97,42 @@ const state = {
   selectedShotId: null,
   drawer: null,
   busy: false,
+  latestAuditJobId: null,
+  auditToken: 0,
 };
+
+const THEME_KEY = "cinelock-theme";
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const label = $("#theme-label");
+  const button = $("#btn-theme");
+  if (label) label.textContent = theme === "light" ? "亮色" : "暗色";
+  if (button) button.setAttribute("aria-pressed", theme === "light" ? "true" : "false");
+  const meta = document.querySelector('meta[name="color-scheme"]');
+  if (meta) meta.setAttribute("content", theme === "light" ? "light dark" : "dark light");
+}
+
+function initTheme() {
+  let theme = "dark";
+  try {
+    const stored = window.localStorage.getItem(THEME_KEY);
+    if (stored === "light" || stored === "dark") theme = stored;
+  } catch (err) {
+    theme = "dark";
+  }
+  applyTheme(theme);
+}
+
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  try {
+    window.localStorage.setItem(THEME_KEY, next);
+  } catch (err) {
+    // 无 localStorage 时仍允许本次切换
+  }
+  applyTheme(next);
+}
 
 // ---------- DOM helpers ----------
 
@@ -352,9 +394,70 @@ async function loadStatus(options = {}) {
     state.status = response.status;
     ensureSelection();
     render();
+    loadAuditChip();
     if (!options.silent) toast("已刷新", "info", 1600);
   } catch (err) {
     toast("读取失败：" + err.message, "error", 7000);
+  }
+}
+
+function auditTone(report) {
+  const status = (report && (report.artifact_status || report.status)) || "skip";
+  if (status === "fail") return "fail";
+  if (status === "warn") return "warn";
+  return "pass";
+}
+
+async function loadAuditChip() {
+  const jobs = (state.status && state.status.jobs) || [];
+  const chipBtn = $("#audit-chip");
+  const ring = $("#audit-ring");
+  const value = $("#audit-chip-value");
+  const signal = $("#signal-audit");
+  const stat = $("#stat-audit-value");
+  if (!chipBtn) return;
+  if (!jobs.length) {
+    chipBtn.disabled = true;
+    ring.className = "audit-ring";
+    ring.style.setProperty("--pct", "0");
+    value.textContent = "—";
+    if (signal) signal.textContent = "待核验";
+    if (stat) stat.textContent = "—";
+    state.latestAuditJobId = null;
+    return;
+  }
+  // 优先核验最近一条带产物的任务：它才真正能证明“文件与上下文绑定一致”
+  const target = jobs.find((job) => (job.local_output_count || 0) > 0) || jobs[0];
+  const token = ++state.auditToken;
+  try {
+    const data = await api("/api/audit?id=" + encodeURIComponent(target.job_id));
+    if (token !== state.auditToken) return;
+    const report = data.audit || {};
+    const counts = report.summary || {};
+    const total = (report.checks || []).length || 13;
+    const passed = counts.pass || 0;
+    const tone = auditTone(report);
+    const pct = total ? Math.round((passed / total) * 100) : 0;
+    chipBtn.disabled = false;
+    ring.className = "audit-ring " + tone;
+    ring.style.setProperty("--pct", String(pct));
+    value.textContent = passed + "/" + total;
+    chipBtn.title = "最近任务 " + shortJobId(target.job_id) + " · 证据链" + (AUDIT_LABELS[tone] || tone) + " · 点击查看";
+    if (signal) {
+      signal.textContent = passed + "/" + total + " · " + (AUDIT_LABELS[tone] || tone);
+      signal.title = "审计对象 " + target.job_id;
+    }
+    if (stat) stat.textContent = passed + "/" + total;
+    state.latestAuditJobId = target.job_id;
+  } catch (err) {
+    if (token !== state.auditToken) return;
+    chipBtn.disabled = true;
+    ring.className = "audit-ring";
+    ring.style.setProperty("--pct", "0");
+    value.textContent = "—";
+    if (signal) signal.textContent = "审计不可用";
+    if (stat) stat.textContent = "—";
+    state.latestAuditJobId = null;
   }
 }
 
@@ -365,10 +468,27 @@ function render() {
   ensureSelection();
   renderHeader();
   renderHero();
+  renderSignal();
   renderEnv();
   renderTimeline();
   renderShot();
   renderJobs();
+}
+
+function renderSignal() {
+  const status = state.status;
+  const pack = status.pack || {};
+  const stats = pack.stats || {};
+  const jobs = status.jobs || [];
+  const variants = stats.variant_count || 0;
+  const withOutputs = jobs.filter((job) => (job.local_output_count || 0) > 0).length;
+  $("#signal-revision").textContent = "context_revision " + (pack.present ? (status.short_revision || "—") : "未构建");
+  $("#signal-variants").textContent = variants
+    ? variants + " 个变体 · 共享同一份快照"
+    : "共享同一份快照";
+  $("#signal-ledger").textContent = jobs.length
+    ? jobs.length + " 条任务 · " + withOutputs + " 条带产物"
+    : "提示词 · 投影 · 产物";
 }
 
 function renderHeader() {
@@ -452,6 +572,11 @@ function renderHero() {
     add(cell, el("b", null, value), el("span", null, label));
     root.appendChild(cell);
   }
+  const auditCell = el("div", "stat teal");
+  const auditValue = el("b", null, "—");
+  auditValue.id = "stat-audit-value";
+  add(auditCell, auditValue, el("span", null, "证据链 AUDIT"));
+  root.appendChild(auditCell);
 }
 
 function envChip(label, value, dotClass, title) {
@@ -769,7 +894,8 @@ function renderJobs() {
     add(pair, el("b", null, job.shot_id || "—"), el("span", null, job.provider_display_name || job.provider_id || "—"));
 
     const mode = el("td", "mode-cell");
-    add(mode, el("b", null, job.mode_label || MODE_LABELS[job.mode] || job.mode || "—"), el("span", null, job.adapter || ""));
+    add(mode, el("b", null, job.mode_label || MODE_LABELS[job.mode] || job.mode || "—"),
+      el("span", null, ADAPTER_LABELS[job.adapter] || job.adapter || ""));
 
     const statusCell = el("td");
     statusCell.appendChild(statusPill(job.status, job.warning_count));
@@ -934,6 +1060,33 @@ function outputList(job) {
   }
   if (!list.children.length) list.appendChild(el("li", null, "没有输出"));
   return list;
+}
+
+function externalSection(job) {
+  const external = job.external;
+  if (!external) return null;
+  const sec = section("外部导入 · EXTERNAL ARTIFACT");
+  sec.appendChild(el("div", "cc-notes",
+    "这条任务不是由 CineLock 调用厂商生成的：产物来自外部模型，登记进账本后接受同一套审计。审计只核验文件哈希与上下文绑定，不证明生成来源，也不判断画面里的脸、服装与伤情是否连续。"));
+
+  const probe = external.probe || {};
+  const probeText = probe.ok
+    ? probe.width + "×" + probe.height + " · " + (probe.duration_sec ? Number(probe.duration_sec).toFixed(2) + "s" : "—") + (probe.codec ? " · " + probe.codec : "")
+    : (probe.available === false ? "ffprobe 缺失，未探测" : "未探测");
+  const grid = el("div", "meta-grid");
+  const cells = [
+    ["模型", external.model || "未声明"],
+    ["来源文件", external.source_filename || "—"],
+    ["导入时间", fmtTime(external.imported_at)],
+    ["声明修订", shortHash(external.declared_revision, 12) + "…"],
+    ["声明提示词", shortHash(external.declared_prompt_sha256, 12) + "…"],
+    ["媒体探测", probeText],
+    ["核验范围", external.verification === "artifact_integrity_only" ? "产物完整性 + 上下文绑定" : (external.verification || "—")],
+  ];
+  for (const [label, value] of cells) grid.appendChild(metaCell(label, value));
+  sec.appendChild(grid);
+  if (external.note) sec.appendChild(el("div", "cc-notes", "导入备注：" + external.note));
+  return sec;
 }
 
 function contactSheetSection(job) {
@@ -1173,32 +1326,68 @@ function auditLoadingSection() {
   return sec;
 }
 
+function auditSummaryText(report) {
+  const counts = report.summary || {};
+  const lines = [
+    "CineLock 审计 · " + (report.job_id || "—"),
+    "镜头 " + (report.shot_id || "—") + " × " + (report.provider_id || "—") + " · 任务 " + (report.job_status || "unknown"),
+    "任务修订 " + (report.short_revision || "—") + " / 当前修订 " + (report.current_short_revision || "—"),
+    "证据链 " + (report.artifact_status || report.status) +
+      " · 通过 " + (counts.pass || 0) + " 警告 " + (counts.warn || 0) +
+      " 失败 " + (counts.fail || 0) + " 跳过 " + (counts.skip || 0),
+    "核验时间 " + (report.checked_at || "—"),
+    "",
+  ];
+  for (const check of report.checks || []) {
+    lines.push("[" + (AUDIT_LABELS[check.status] || check.status) + "] " + check.label + " — " + check.detail);
+  }
+  return lines.join("\n");
+}
+
 function auditSection(report) {
   const counts = report.summary || {};
   const verdict = report.verdict || {};
   const artifact = report.artifact_status || report.status;
+  const checks = report.checks || [];
+  const total = checks.length || 13;
+  const passed = counts.pass || 0;
+  const tone = auditTone(report);
+  const pct = total ? Math.round((passed / total) * 100) : 0;
   const sec = section("连续性审计 · AUDIT", [
+    button("复制摘要", "ghost", () => copyText(auditSummaryText(report), "审计摘要"), { tiny: true }),
     button("重新核验", "ghost", () => runAudit(report.job_id), { tiny: true }),
   ]);
   sec.id = "audit-section";
 
-  const summary = el("div", "audit-summary");
-  summary.appendChild(el("span", "audit-badge " + artifact, "证据链 " + (AUDIT_LABELS[artifact] || artifact)));
-  summary.appendChild(
-    el(
-      "b",
-      null,
-      "通过 " + (counts.pass || 0) + " · 警告 " + (counts.warn || 0) + " · 失败 " + (counts.fail || 0) + " · 跳过 " + (counts.skip || 0)
-    )
-  );
-  summary.appendChild(el("span", "audit-time", "核验于 " + fmtTime(report.checked_at)));
-  sec.appendChild(summary);
+  const hero = el("div", "audit-hero");
+  const score = el("div", "audit-score" + (tone === "pass" ? "" : " " + tone));
+  score.style.setProperty("--pct", String(pct));
+  const inner = el("div", "audit-score-inner");
+  add(inner, el("b", null, passed + "/" + total), el("span", null, (AUDIT_LABELS[tone] || tone).toUpperCase()));
+  score.appendChild(inner);
 
-  const layered = el("div", "audit-verdict");
-  layered.appendChild(el("span", null, "任务 " + (AUDIT_JOB_LABELS[report.job_status] || report.job_status || "未知") + (report.dry_run ? "（演练）" : "")));
-  layered.appendChild(el("span", null, "上下文 " + (AUDIT_CONTEXT_LABELS[verdict.current_context] || "未知")));
-  layered.appendChild(el("span", "audit-badge " + (verdict.overall || artifact), "综合 " + (AUDIT_LABELS[verdict.overall || artifact] || artifact)));
-  sec.appendChild(layered);
+  const copy = el("div", "audit-hero-copy");
+  copy.appendChild(el("div", "audit-hero-title",
+    "证据链 " + (AUDIT_LABELS[artifact] || artifact) + " · 核验于 " + fmtTime(report.checked_at)));
+  copy.appendChild(el("div", "audit-hero-sub",
+    "任务 " + (AUDIT_JOB_LABELS[report.job_status] || report.job_status || "未知") + (report.dry_run ? "（演练）" : "") +
+    " · 上下文 " + (AUDIT_CONTEXT_LABELS[verdict.current_context] || "未知") +
+    " · 只证明产物与上下文绑定一致，不证明生成来源"));
+  const track = el("div", "audit-track");
+  for (const check of checks) {
+    const seg = el("span", "audit-seg " + check.status);
+    seg.title = check.label + " · " + (AUDIT_LABELS[check.status] || check.status) + " · " + check.detail;
+    track.appendChild(seg);
+  }
+  copy.appendChild(track);
+  add(hero, score, copy);
+  sec.appendChild(hero);
+
+  const layer = el("div", "audit-verdict");
+  layer.appendChild(el("span", null,
+    "通过 " + passed + " · 警告 " + (counts.warn || 0) + " · 失败 " + (counts.fail || 0) + " · 跳过 " + (counts.skip || 0)));
+  layer.appendChild(el("span", "audit-badge " + (verdict.overall || artifact), "综合 " + (AUDIT_LABELS[verdict.overall || artifact] || artifact)));
+  sec.appendChild(layer);
 
   if (!verdict.job_ok && artifact !== "fail") {
     sec.appendChild(el("div", "audit-note", "证据链通过不等于任务成功；任务状态为 " + (AUDIT_JOB_LABELS[report.job_status] || "未知") + "。"));
@@ -1211,7 +1400,7 @@ function auditSection(report) {
   }
 
   const list = el("div", "audit-list");
-  for (const check of report.checks || []) {
+  for (const check of checks) {
     const item = el("div", "audit-item " + check.status);
     const head = el("div", "audit-item-head");
     head.appendChild(el("span", "audit-badge " + check.status, AUDIT_LABELS[check.status] || check.status));
@@ -1252,13 +1441,14 @@ async function runAudit(jobId, options = {}) {
 function renderJobDrawer(job) {
   const render = job.render || {};
   setDrawerHeader(
-    "JOB · " + (job.adapter || "").toUpperCase(),
+    "JOB · " + (ADAPTER_LABELS[job.adapter] || job.adapter || "").toUpperCase(),
     "任务记录",
     [
       statusPill(job.status),
       el("code", null, shortJobId(job.job_id)),
       el("span", null, (job.shot_id || "—") + " × " + (job.provider_id || "—")),
       job.dry_run ? chip("演练", "change") : null,
+      job.external ? chip("外部导入", "wardrobe") : null,
     ]
   );
 
@@ -1274,10 +1464,13 @@ function renderJobDrawer(job) {
   const preview = mediaPreview(job);
   if (preview) body.appendChild(preview);
 
+  const external = externalSection(job);
+  if (external) body.appendChild(external);
+
   const metaSection = section("任务参数 · PARAMETERS");
   const grid = el("div", "meta-grid");
   const cells = [
-    ["适配器", job.adapter || "—"],
+    ["适配器", ADAPTER_LABELS[job.adapter] || job.adapter || "—"],
     ["模式", render.mode_label || MODE_LABELS[render.mode] || render.mode || "—"],
     ["时长", (render.duration_sec || "?") + "s"],
     ["Seed", render.seed || "—"],
@@ -1374,6 +1567,7 @@ async function buildPack() {
       state.status = response.status;
       ensureSelection();
       render();
+      loadAuditChip();
     } else {
       await loadStatus({ silent: true });
     }
@@ -1463,6 +1657,10 @@ function wireEvents() {
   $("#btn-jobs-refresh").addEventListener("click", () => loadStatus());
   $("#btn-run-mock-dry").addEventListener("click", () => runAllMock(true));
   $("#btn-run-mock-all").addEventListener("click", () => runAllMock(false));
+  $("#btn-theme").addEventListener("click", toggleTheme);
+  $("#audit-chip").addEventListener("click", () => {
+    if (state.latestAuditJobId) openJobById(state.latestAuditJobId, { focusAudit: true });
+  });
   $("#drawer-close").addEventListener("click", closeDrawer);
   $("#drawer-backdrop").addEventListener("click", closeDrawer);
   document.addEventListener("keydown", (event) => {
@@ -1470,5 +1668,6 @@ function wireEvents() {
   });
 }
 
+initTheme();
 wireEvents();
 loadStatus();

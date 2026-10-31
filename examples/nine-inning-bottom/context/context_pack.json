@@ -7,7 +7,7 @@
   "episode_title": "九局下半 · 占位样片",
   "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
   "short_revision": "9bb2cfb6449f",
-  "generated_at": "2026-10-31T13:39:38Z",
+  "generated_at": "2026-10-31T14:08:15Z",
   "source_hashes": {
     "project": "b7dff3eebaa1cb11036dce545986a2358d4d2742f6ecbff0341fa1836b5d80c6",
     "characters": "7cf5e8a5e27880557f27745aeb87dcf1b64d35a87d1641462f80c7889cc54b9a",
@@ -1128,7 +1128,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "cc41d752fd1116803eb2cd988374812a64bda4c10778068f66a685b0d9256614"
     },
     {
@@ -1290,7 +1290,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "3388432b3532b946edefd199b2b61df056d42f3b3e57530d914a6b97292b7f3e"
     },
     {
@@ -1452,7 +1452,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "d8bd7db3bf3fa91d330899afbc8b23b2ff22ff5e30fdc808266dfbae94fa0216"
     },
     {
@@ -1633,7 +1633,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "a673fcc21abd5f8f8a615192fcd48a96ee600ad2e373c25a017deb9ee5627afa"
     },
     {
@@ -1858,7 +1858,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "8ff1e41769093d660fac2e2545965c676f08c1b404502649a707890501894145"
     },
     {
@@ -2038,7 +2038,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "93044a090839a67643e18c678f2c4b797ec7995f8e793917973a61624b10d588"
     },
     {
@@ -2218,7 +2218,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "8606e404858b19a98d244292f43509f122228efb78800d52c8ed36d9bb183d54"
     },
     {
@@ -2443,7 +2443,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "cc8ff6481ba567bc0205abf4868a8a9c55a1d8af6d6c1079fdb9980c91327c18"
     },
     {
@@ -2671,7 +2671,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "43d1a9746f9f5af8b10e262eaa4e010cacfcb9a0ced9e3af8f4d5f2518f1d4b3"
     },
     {
@@ -2849,7 +2849,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "d24f7e1eaeb1af423f7ded790a9060c3be6e2dcfd5a03939ea2e04ae90347dc2"
     },
     {
@@ -3027,7 +3027,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "9ebdc0fd18a6254c2b3f76cb3bed61f0e9fca6a7ad8105df61232e4eda124445"
     },
     {
@@ -3255,7 +3255,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "af20176fd5429731afa0d3ac52f971954e9a333662a7f8867a928f6be17e5bd0"
     },
     {
@@ -3490,7 +3490,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "0142f377d9fc0d06a8b22f1d586dba8eba9255e018b1d75c325092551e6f760f"
     },
     {
@@ -3676,7 +3676,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "64513ce12bd3f5531529cfda862fcd76a6d978718cc32e72a722ac7ab19c0775"
     },
     {
@@ -3862,7 +3862,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "1a2a85649380818350764b204ab18c5699991afe18a70816f98591f6b968f58c"
     },
     {
@@ -4097,7 +4097,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "6f1182ba931f39fee22b3fe9afa9572df7d6766cd8afc0cb0eb93d2b55f49382"
     },
     {
@@ -4323,7 +4323,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "6d1417b437d9cf6cc93a3a5505230ae5cc9a370c5f854c935ee12a9b608e065b"
     },
     {
@@ -4504,7 +4504,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "ece6b90e33d4ea7372f823b19a17c3ab181efe3d042aafaccdbd0998ad09e477"
     },
     {
@@ -4685,7 +4685,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "3519ce25b2872873d6b863879a5a53f1d087dd29c947ce0a06001614970cd5f3"
     },
     {
@@ -4911,7 +4911,7 @@
       "blockers": [],
       "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
       "short_revision": "9bb2cfb6449f",
-      "compiled_at": "2026-10-31T13:39:38Z",
+      "compiled_at": "2026-10-31T14:08:15Z",
       "variant_sha256": "fd4a05e797e7fb5be5d327f0e4374f5f5996cec0d1d39bca325f7c55d046755a"
     }
   ],

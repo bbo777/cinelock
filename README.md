@@ -2,9 +2,19 @@
 
 **AI 视频工业化的连续性基础设施。**
 
+## Why I built this（我的开发动机）
+
+> 我只有一台普通的 ASUS VivoBook 轻薄本，没有独立显卡，也没有多余的钱去购买动辄几百上千的 AI 视频生成额度。
+>
+> 但我又想拍一部连续、不穿帮的 AI 漫剧。
+>
+> 买不起算力，逼得我只能去抠底层逻辑。于是，我写了 CineLock（原 NineFlow）：一套能用最少的算力（甚至免费额度）、最严格的上下文锁（哈希锁）、最极致的状态机，保证你每一次抽卡都不浪费的上下文治理引擎。
+
+这台轻薄本能做文字处理、JSON 编译、状态机校验和 mock 渲染；它做不了的，是替你烧掉几百上千块去抽一条能用的镜头。所以 CineLock 把“钱”留在生成那一步，把“不穿帮”尽量前移到编译那一步。
+
 > CineLock（原 NineFlow）是一个 AI 视频上下文治理引擎。本仓库自带《九局下半》作为演示项目。
 
-![tests](https://img.shields.io/badge/tests-62%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-67%20passing-brightgreen)
 ![python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![mcp](https://img.shields.io/badge/MCP-stdio%20server-6f42c1)
@@ -14,6 +24,43 @@ AI 视频工业化最核心的矛盾，不是“模型会不会生成”，而�
 CineLock 不试图消除概率性，而是把不确定性约束进一条可锁定、可复现、可审计的上下文流水线：每个模型共享同一套参考图、同一份角色卡、同一条时间线和同一个上下文修订；任何事实源变化都会生成新修订，旧包拒绝执行。每次生成都会留下提示词、参考图哈希、渲染参数和输出哈希，让“这一镜为什么变了”可以追到具体版本。
 
 **一句话：把概率模型的不确定性，约束进影视叙事要求的连续性边界内。**
+
+---
+
+## 📦 Handoff：把算力众包出去
+
+**我没有钱生成全片，但我用轻薄本把整部《九局下半》的上下文、时间线、连续状态完美打包了。你可以拿着我的包，去用你自己的模型生成，然后把结果传回来看审计结果。**
+
+Handoff 不是“下载一段提示词”，而是一份可验证的交接协议：
+
+- 包里有按优先级排好的参考图副本（附 SHA-256）、正向/负向提示词、`manifest.json` 和操作说明；
+- manifest 固定 `context_revision` 与 `prompt_sha256`，外部队列的结果必须对得上，不能拿旧包冒充新包；
+- 你在 Midjourney 生成关键帧，或去可灵 / 即梦 / Runway 生成视频，再把文件传回来；
+- `studio.py import` 把外部视频登记进任务账本，**同一套 13 项审计**立刻能核验“文件没被动过、仍然绑在同一个上下文修订上”。
+
+| 我出 | 你出 |
+| --- | --- |
+| 一个上下文修订、参考图顺序、提示词、状态快照、审计规则 | 一次模型调用、你的会员额度 |
+| 回传后的哈希登记与证据链审计 | 视频文件，或者一份诚实的失败样本 |
+
+```bash
+# 1. 导出交接包（本机，不花一分钱算力）
+python studio.py handoff --shot E01-004
+
+# 2. 把 refs/ 里的图按 manifest 顺序喂给模型，粘贴 prompt.txt
+#    生成后把视频文件发回来
+
+# 3. 登记外部结果并审计
+python studio.py import --shot E01-004 --video ~/Downloads/kling_E01-004.mp4 \
+  --model "Kling 2.5" \
+  --revision <manifest 里的 context_revision> \
+  --prompt-hash <manifest 里的 prompt_sha256>
+python studio.py audit --id <job_id>
+```
+
+> **边界**：`import` 只证明这条视频与当前修订、提示词和文件哈希绑定一致；它**不证明**视频真的由所声明的模型生成，也**不判断**画面里的脸、服装与伤情是否连续。审计是证据链，不是生成来源鉴定，更不是自动审片。
+
+第一次操作请直接看 **[Handoff 傻瓜式操作指南](docs/handoff-guide.md)**：从下载包、选模型、对齐时长，到回传、抽帧、导入、审计，全部按步骤写死。想直接赞助算力，见 **[Issue #11 · 求大佬赞助算力](https://github.com/bbo777/cinelock/issues/11)**。
 
 ---
 
@@ -37,19 +84,23 @@ CineLock 不试图消除概率性，而是把不确定性约束进一条可锁�
 
 ---
 
-## 🎬 官方演示关卡：AI 漫剧《九局下半》（WIP）
+## 🎬 实验项目：《九局下半》（因算力受限，目前停留在关键帧与上下文编译阶段）
 
-> 🚧 **正在进行的实战项目**：AI 漫剧《九局下半》（WIP）
+《九局下半》不是仓库的主体，而是 CineLock 的**公开测试用例**：一个刻意保留真实复杂度的实验项目，用来验证“多镜头、多厂商、角色状态持续演化”时，上下文层能不能兜住。
 
-《九局下半》不是仓库的主体，而是 CineLock 的**官方演示关卡**：一个刻意保留真实复杂度的测试用例，用来验证“多镜头、多厂商、角色状态持续演化”时，上下文层能不能兜住。
+这套系统是跑通的：角色状态机建好了，5 个镜头的服装、伤情、道具、表情与场景都能按时间线重放；mock 出片、handoff 导出、外部导入、ffprobe 校验、九宫格抽帧、13 项审计都已验证。
+
+但我没钱买算力把成片跑出来。时间线目前是 **5 个镜头 / 31 秒**，我原本想把它扩到 2 分半；现实是连这 31 秒的真实模型出片都还没跑完。这不妨碍 CineLock 成为一个好引擎——它已经把“该生成什么、每个模型该看到什么、生成后怎么验”固定下来了。
+
+**目前仓库附带的是 mock 产出的占位视频，以及一份可以直接交给别人去生成的真实 handoff 包。没有成片，也不会把占位视频说成成片。**
 
 ### 当前状态
 
-- 系统底层引擎、上下文锁、状态机与审计闭环已完成，**62 项测试通过**；
+- 系统底层引擎、上下文锁、状态机、外部导入与审计闭环已完成，**67 项测试通过**；
 - **5 个镜头、4 个启用厂商、20 个变体、56 次参考图引用**共享同一个修订；
-- mock 出片、handoff 包、ffprobe 校验、九宫格抽帧、13 项审计均已跑通；
-- 视频画面正在通过本框架（结合 handoff 模式与 Quota-Flow）逐个镜头生成中；
-- **目前没有成片**。真实厂商出片仍受登录态与公网参考图 URL 限制，仓库不会把 mock 占位视频说成成片。
+- mock 出片、handoff 包、外部视频导入、ffprobe 校验、九宫格抽帧、13 项审计均已跑通；
+- 真实厂商出片仍受登录态、公网参考图 URL 与**预算**限制；
+- 仓库不会把 mock 占位视频说成成片，也不会把外部导入说成“由 CineLock 生成”。
 
 ### 它到底在演示什么
 
@@ -88,6 +139,12 @@ E01-005  home_injured  打击区 · 黄昏    伤情与撕裂袖口延续到收�
 ![CineLock audit 13/13](docs/images/showcase-audit.png)
 
 > 真实 CLI 输出：证据链 13 项通过。审计只证明任务记录、参考图、产物与约定修订仍然一致，**不证明成片里的像素级连续性**。
+
+### 外部产物导入
+
+![CineLock external import drawer](docs/images/showcase-external-import.png)
+
+> 拿着 handoff 包去 Midjourney / 可灵 / 即梦生成后，用 `studio.py import` 把文件绑回当前修订与提示词哈希。看板会标出“外部导入”、声明修订、媒体探测结果和审计边界。图中的外部文件是 mock 占位视频，仅用于演示导入流程。
 
 ### 参考图库
 
@@ -163,6 +220,10 @@ python studio.py contact-sheet --video outputs/<job_id>.mp4 --out outputs/custom
 # 导出任意模型可用的手工交接包
 python studio.py handoff --shot E01-004
 
+# 把外部模型生成、且属于同一修订的视频登记进任务账本
+python studio.py import --shot E01-004 --video ~/Downloads/kling_E01-004.mp4 \
+  --model "Kling 2.5" --revision <manifest 修订> --prompt-hash <manifest 提示词哈希>
+
 # 任务账本
 python studio.py jobs --limit 20
 python studio.py job --id <job_id> --prompt
@@ -229,15 +290,16 @@ context_revision ── build ──▶ Context Pack（所有镜头 × 厂商共
 
 ## 已验证的能力
 
-- `cd tests && python -m unittest discover -s . -t . -v`：**62 项测试通过**。
+- `cd tests && python -m unittest discover -s . -t . -v`：**67 项测试通过**。
 - mock 适配器：真实生成 5s / 1920×1080 / 24fps 的 H.264 占位视频（Pillow 底板 + ffmpeg），并用 ffprobe 回读时长、分辨率与编码。
 - media 模块：ffprobe 校验本地视频；ffmpeg 均匀抽 9 帧拼成 1920×1080 的 3×3 九宫格。
 - handoff 适配器：导出参考图、正向/负向提示词、manifest、README 的完整手工包。
+- 外部导入：`import` 把外部模型生成的视频绑定到当前修订与提示词哈希，复制进 `outputs/`、记录 SHA-256 与 ffprobe 元数据，再走同一套 13 项审计；修订或提示词对不上会直接拒绝。
 - Quota-Flow CLI 0.1.0：已安装并可被发现（自动使用自带 Node 22）；`generate` 子进程、JSON 解析、任务账本已跑通。
 - Quota-Flow 适配器：能识别 CLI 的 dry-run 回包（不会误记为出片）、拒绝厂商静默替换、检查 Node/公网 URL 前置条件；下载后的视频必须通过 ffprobe 校验才算成功（没有 ffprobe 时保留文件但给出警告）。
 - 连续性审计：任务保存上下文快照与引擎指纹；CLI 与看板都能逐项核验 13 项检查——修订锁、快照完整性、状态机重放、提示词、参考图、产物哈希、同修订重编译等，并能识别旧任务与历史修订。审计结果分为**证据链状态**与**任务状态**两层，不再把“任务失败”误写成“存证失败”。
 - 哈希闭环：`refresh-hashes` 可把被替换参考图的记录哈希修复到实际文件；全量 `build` 才会写共享包，`build --provider` 只做预览。
-- 本地看板：时间线、连续性快照、厂商矩阵、变体抽屉、任务账本、审计抽屉、视频预览、任务抽屉内一键生成抽帧九宫格、UI 内发起 mock 生成；桌面与 390px 窄屏均已验收。
+- 本地看板：时间线、连续性快照、厂商矩阵、变体抽屉、任务账本、审计抽屉、视频预览、任务抽屉内一键生成抽帧九宫格、UI 内发起 mock 生成；新增明暗主题切换、顶部证据链环与上下文流水线示意。桌面与 390px 窄屏均已验收。
 - 安全校验：Host/Origin 校验、POST 自定义头、文件根目录白名单、Range 206、CSP。
 
 **未验证 / 当前限制**：真实 Quota-Flow 厂商出片。CLI 已安装，但本机没有 qwenwan / yuanbao 登录凭据，占位参考图也没有公网 `https` URL；适配器会在执行前如实阻断，或在无凭据时把 CLI 的 dry-run 记为 `dry_run`。此外，已安装的 CLI 0.1.0 只注册了 `qwenwan`、`yuanbao` 两家（且都只支持单图首帧），README 中的 Dola / 百炼 / 智谱 / 豆包 / 火山 / TokenHub 尚未在该 CLI 中落地。
@@ -309,6 +371,7 @@ cinelock/
   context_pack.py             打包 context_pack.json / CONTEXT.md / 分镜变体
   dispatch.py                 新鲜度检查、适配器调度、任务状态机
   jobs.py                     单个任务 JSON + append-only jobs.jsonl + 上下文存证
+  ingest.py                   外部模型产物导入、修订绑定与媒体探测
   hashes.py                   参考图记录哈希与实际文件对齐（refresh-hashes）
   media.py                    ffprobe 探测 + ffmpeg 抽帧九宫格
   audit.py                    修订锁、快照重放、参考图/产物/重编译核验
@@ -323,7 +386,7 @@ config/
   providers.json              厂商能力矩阵与 Quota-Flow CLI 映射
   prompt_maps.json            风格、景别、运镜等词表
 web/                          无外部依赖的看板前端
-examples/nine-inning-bottom/  官方演示关卡
+examples/nine-inning-bottom/  实验项目《九局下半》
   project.json                项目/风格/画幅/默认策略
   characters.json             角色卡
   reference_bank.json         参考图库（本地路径 + 可选 public_url）
@@ -475,7 +538,7 @@ python studio.py build
 | `mock` | Mock（本地演练） | 本地适配器 | text2video / img2video / multi_ref / first_last | 10 | 3/4/5/6/8/10s |
 | `qwenwan` | 千问·通义万相 | Quota-Flow CLI 0.1.0 | text2video / img2video | 1 | 5s |
 | `yuanbao` | 腾讯元宝·混元 | Quota-Flow CLI 0.1.0 | text2video / img2video | 1 | 5s |
-| `handoff` | 手工交接包（任意模型） | 本地导出 | text2video / img2video / multi_ref / first_last | 10 | 3/4/5/6/8/10s |
+| `handoff` | 手工交接包（任意模型） | 本地导出 / 外部导入 | text2video / img2video / multi_ref / first_last | 10 | 3/4/5/6/8/10s |
 
 `qwenwan` / `yuanbao` 在 CLI 0.1.0 中只接受单图首帧，所以每个镜头只拿第 1 张身份锚点；其余参考图与状态继续进入提示词。多参考/首尾帧仍可通过 mock 校验或 handoff 导出给其他模型使用。
 
@@ -674,7 +737,7 @@ python -m unittest discover -s . -t . -v
 - 修订稳定性与失效；
 - 连续性状态演化；
 - 参考图上限、身份锚点、模式选择、时长适配、提示词内容与确定性；
-- mock 真实出片、handoff 包完整性、Quota-Flow 前置阻断、旧包拒绝；
+- mock 真实出片、handoff 包完整性、外部视频导入与修订/提示词绑定、Quota-Flow 前置阻断、旧包拒绝；
 - CLI dry-run 识别、厂商静默替换拒绝、默认厂商矩阵与规划厂商阻断；
 - 审计通过、快照/修订/参考图/产物篡改、历史修订、旧任务降级、任务状态与证据链分层、审计 API 与 CLI；
 - 看板 API、CSRF/Host/Origin、路径穿越、文件 Range、九宫格接口与本地视频前置检查；
@@ -699,6 +762,7 @@ mock 出片与九宫格测试在缺少 ffmpeg / ffprobe / Pillow 时自动跳过
 - 当前没有自动人脸评分、镜头完成度判断、音频/口型、自动重试与人工审片队列。
 - ffprobe 只验证容器、视频流、时长与分辨率；它不能证明画面里的人脸、服装或伤情连续。九宫格是人工审片的辅助视图，不是自动质检。
 - mock 输出只是占位底板，不能用来判断真实模型质量。
+- `import` 只接受本地 `.mp4` / `.mov` / `.webm`，只核验“文件哈希 + 当前修订/提示词绑定”；它不验证生成来源，不判断画面连续性，也不会自动下载远程链接。
 - 审计能证明“任务记录与当前磁盘上的参考图/产物仍一致”，不能证明成片里的人脸、服装和伤情真的连续；输出侧仍需人工或视觉模型审片。
 - 审计不是密码学签名，只防漂移与朴素篡改；拥有任务 JSON 与磁盘写权限的人可以同时改写存证与产物。
 - 看板是单机工具，没有多用户认证，不应暴露到局域网或公网。
@@ -731,4 +795,4 @@ CineLock 只做输入侧连续性治理与证据链审计，不对任何模型�
 
 ---
 
-如果这个项目对你有帮助，欢迎 Star、在 [Issues](https://github.com/bbo777/cinelock/issues) 领取一个镜头，或者直接 fork 一份，把《九局下半》的 5 个镜头真正生成出来。
+如果你恰好有闲置的模型会员或算力，欢迎来 [Issue #11 · 求大佬赞助算力](https://github.com/bbo777/cinelock/issues/11) 认领一个镜头；如果你也没有预算，欢迎 Star、领取一个工程任务，或者 fork 一份，把《九局下半》的 5 个镜头真正生成出来。**有钱出钱，有力出力，CineLock 把上下文管好。**

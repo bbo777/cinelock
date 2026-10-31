@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
   <meta name="description" content="CineLock 是 AI 视频工业化的连续性基础设施：用上下文哈希锁、state_delta 快照和生成账本，约束概率模型的漂移并保留可追溯性。">
   <title>CineLock · 九局下半 · AI 视频连续性基础设施</title>
   <link rel="stylesheet" href="/style.css">
@@ -26,6 +26,15 @@
         <code id="rev-value">—</code>
         <span class="pack-badge" id="pack-state">读取中</span>
       </div>
+      <button class="audit-chip" id="audit-chip" type="button" disabled title="核验最近一次任务的 13 项证据链">
+        <span class="audit-ring" id="audit-ring" aria-hidden="true"></span>
+        <span class="audit-chip-label">AUDIT</span>
+        <code id="audit-chip-value">—</code>
+      </button>
+      <button class="btn ghost theme-toggle" id="btn-theme" type="button" aria-pressed="false" title="切换明暗主题">
+        <span class="theme-glyph" aria-hidden="true"></span>
+        <span id="theme-label">暗色</span>
+      </button>
       <button class="btn ghost" id="btn-refresh" type="button">刷新</button>
       <button class="btn primary" id="btn-build" type="button">重新构建</button>
     </div>
@@ -45,6 +54,38 @@
       <div class="hero-tags" id="hero-tags"></div>
     </div>
     <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="signal-band" aria-label="上下文流水线">
+    <div class="signal-node">
+      <span class="signal-index">01 · FACTS</span>
+      <b>事实源</b>
+      <span>角色卡 · 参考图 · 时间线</span>
+    </div>
+    <span class="signal-link" aria-hidden="true"><i></i></span>
+    <div class="signal-node accent">
+      <span class="signal-index">02 · HASH LOCK</span>
+      <b>上下文修订</b>
+      <span id="signal-revision">context_revision —</span>
+    </div>
+    <span class="signal-link" aria-hidden="true"><i></i></span>
+    <div class="signal-node">
+      <span class="signal-index">03 · COMPILE</span>
+      <b>厂商变体</b>
+      <span id="signal-variants">共享同一份快照</span>
+    </div>
+    <span class="signal-link" aria-hidden="true"><i></i></span>
+    <div class="signal-node">
+      <span class="signal-index">04 · LEDGER</span>
+      <b>生成账本</b>
+      <span id="signal-ledger">提示词 · 投影 · 产物</span>
+    </div>
+    <span class="signal-link" aria-hidden="true"><i></i></span>
+    <div class="signal-node audit">
+      <span class="signal-index">05 · AUDIT</span>
+      <b>证据链</b>
+      <span id="signal-audit">待核验</span>
+    </div>
   </section>
 
   <section class="env-strip" id="env-strip" aria-label="运行环境"></section>
