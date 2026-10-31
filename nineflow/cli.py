@@ -717,6 +717,12 @@ def cmd_serve(args: argparse.Namespace, ctx: ProjectContext) -> int:
     )
 
 
+def cmd_mcp(args: argparse.Namespace, ctx: ProjectContext) -> int:
+    from .mcp_server import serve
+
+    return serve(ctx)
+
+
 # ---------- parser ----------
 
 
@@ -734,7 +740,8 @@ def build_parser() -> argparse.ArgumentParser:
         "  python studio.py handoff --shot E01-004\n"
         "  python studio.py contact-sheet --job JOB_...\n"
         "  python studio.py audit --id JOB_...\n"
-        "  python studio.py serve\n",
+        "  python studio.py serve\n"
+        "  python studio.py --project-dir projects/nine-inning-bottom mcp\n",
     )
     parser.add_argument("--project-dir", help="项目目录（默认 projects/nine-inning-bottom）")
     parser.add_argument("--config-dir", help="配置目录（默认 config）")
@@ -814,6 +821,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=8787, help="端口（默认 8787）")
     p.add_argument("--no-open", action="store_true", help="不自动打开浏览器")
     p.set_defaults(func=cmd_serve)
+
+    p = sub.add_parser("mcp", help="以 MCP stdio Server 运行（Claude Desktop / WorkBuddy）")
+    p.set_defaults(func=cmd_mcp)
     return parser
 
 

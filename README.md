@@ -8,6 +8,8 @@ NineFlow 不试图消除概率性，而是把不确定性约束进一条可锁�
 
 **一句话：把概率模型的不确定性，约束进影视叙事要求的连续性边界内。**
 
+同时内置零依赖 **MCP stdio Server**：把项目状态、编译预览、审计和九宫格暴露为 7 个工具，Claude Desktop / WorkBuddy 加 9 行配置即可调用同一套哈希锁与状态机。
+
 > 当前仓库是**可跑通的占位骨架**：1 个角色、2 个场景、5 个镜头、4 个启用厂商（mock / qwenwan / yuanbao / handoff），共 20 个变体；另有 6 家厂商已写入矩阵但当前 CLI 未注册，默认不参与 build。角色、台词、参考图均为演示数据，替换真实内容后重新 `build` 即可。
 >
 > 本项目**不修改 Quota-Flow 源码**，也不保存任何 Cookie、API Key 或账号登录态。
@@ -58,7 +60,7 @@ context_revision ── build ──▶ Context Pack（所有镜头 × 厂商共
 
 ## 已验证的能力
 
-- `python -m unittest discover -s tests -v`：**56 项测试通过**。
+- `python -m unittest discover -s tests -v`：**62 项测试通过**。
 - mock 适配器：真实生成 5s / 1920×1080 / 24fps 的 H.264 占位视频（Pillow 底板 + ffmpeg），并用 ffprobe 回读时长、分辨率与编码。
 - media 模块：ffprobe 校验本地视频；ffmpeg 均匀抽 9 帧拼成 1920×1080 的 3×3 九宫格。
 - handoff 适配器：导出参考图、正向/负向提示词、manifest、README 的完整手工包。
@@ -133,6 +135,9 @@ python studio.py job --id <job_id> --prompt
 # 连续性审计（退出码：0 证据链通过 / 1 警告 / 2 失败）
 python studio.py audit --id <job_id>
 python studio.py audit --id <job_id> --json
+
+# 以 MCP stdio Server 启动（Claude Desktop / WorkBuddy）
+python studio.py --project-dir projects/nine-inning-bottom mcp
 ```
 
 全局参数放在子命令之前，例如：
@@ -157,6 +162,59 @@ python studio.py --project-dir projects/nine-inning-bottom --config-dir config s
 
 ---
 
+## MCP / API 接入
+
+NineFlow 内置一个零依赖的 MCP stdio Server。Claude Desktop、WorkBuddy 或其他 MCP 客户端可以直接调用同一套哈希锁、状态机与审计能力，不需要额外服务或 API Key。
+
+### 10 行配置
+
+把下面这段加入 Claude Desktop 的 `claude_desktop_config.json`：
+
+```json
+{
+  "mcpServers": {
+    "nineflow": {
+      "command": "python",
+      "args": ["C:/path/to/nineflow/studio.py", "--project-dir",
+               "C:/path/to/nineflow/projects/nine-inning-bottom", "mcp"],
+      "env": {"PYTHONIOENCODING": "utf-8"}
+    }
+  }
+}
+```
+
+WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；如果文件里已有其他 server，把 `nineflow` 这一项合并进 `mcpServers` 即可。
+
+把 `C:/path/to/nineflow` 换成仓库实际路径。若客户端找不到 `python`，把 `"command"` 换成 `where python` 返回的绝对路径。JSON 里的 Windows 路径请使用 `/`，或把 `\` 转义为 `\\`。
+
+### 可用工具
+
+| 工具 | 作用 | 是否写入 |
+| --- | --- | --- |
+| `nineflow_status` | 当前修订、镜头、厂商、Pack 状态与校验摘要 | 否 |
+| `nineflow_validate` | 校验角色卡、参考图哈希、时间线与厂商配置 | 否 |
+| `nineflow_variant` | 读取某个镜头 × 厂商的提示词、参考图与连续性快照 | 否（仅在内存编译） |
+| `nineflow_audit` | 按 `job_id` 运行 13 项证据链审计 | 否 |
+| `nineflow_jobs` | 列出任务账本，可按镜头/厂商过滤 | 否 |
+| `nineflow_build` | 编译 Context Pack；默认只预览，`write=true` 才全量写入 | 显式调用时 |
+| `nineflow_contact_sheet` | 从任务视频生成 3×3 抽帧九宫格 | 写入 `outputs/` |
+
+配置完成后，可以直接在客户端里说：
+
+- “用 nineflow_status 看一下当前修订和 5 个镜头。”
+- “把 E01-004 × mock 的完整提示词和参考图给我。”
+- “审计 JOB_...，分别告诉我证据链结论和任务状态。”
+
+### 安全边界
+
+- 只使用 stdio，不监听端口，不发起网络请求；
+- 项目目录在进程启动时固定，工具不能遍历到任意路径；
+- `nineflow_build` 默认只预览，写共享包必须显式传 `write=true`，且不允许和 `provider_id` 同时使用；
+- MCP 客户端拥有当前用户的本地文件权限，只连接可信客户端；
+- Quota-Flow 的登录凭据不会通过 MCP 暴露；MCP 工具不执行真实厂商调用。
+
+---
+
 ## 目录
 
 ```text
@@ -172,6 +230,7 @@ nineflow/
   hashes.py                   参考图记录哈希与实际文件对齐（refresh-hashes）
   media.py                    ffprobe 探测 + ffmpeg 抽帧九宫格
   audit.py                    修订锁、快照重放、参考图/产物/重编译核验
+  mcp_server.py               MCP stdio Server（状态 / 编译 / 审计 / 九宫格）
   adapters/mock.py            占位底板 + ffmpeg 编码
   adapters/handoff.py         手工交接包
   adapters/quota_flow.py      Quota-Flow CLI 子进程与结果解析
@@ -524,7 +583,8 @@ python -m unittest discover -s tests -v
 - 看板 API、CSRF/Host/Origin、路径穿越、文件 Range、九宫格接口与本地视频前置检查；
 - CLI 的 validate / build / status / compile / run / jobs / job / audit / refresh-hashes / contact-sheet 全链路；
 - 哈希漂移修复、缺失参考图时拒绝写入、部分构建不覆盖共享包、重建清理过期变体文件；
-- ffprobe 探测、3×3 九宫格尺寸与时间戳、坏视频报错。
+- ffprobe 探测、3×3 九宫格尺寸与时间戳、坏视频报错；
+- MCP 初始化、工具目录、状态/变体只读、预览不写包、审计与任务账本、stdio 往返。
 
 mock 出片与九宫格测试在缺少 ffmpeg / ffprobe / Pillow 时自动跳过。
 

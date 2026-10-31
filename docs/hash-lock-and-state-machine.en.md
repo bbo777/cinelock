@@ -1,6 +1,7 @@
 # How I Used Hash Locks and a State Machine to Fix Multi-Model AI Video Continuity
 
 > Five shots, four providers, twenty variants — all compiled from the same context revision `3363f8fde6e7`.
+> The project also ships a zero-dependency MCP server so agents can query the lock directly.
 
 When you generate the same scene with multiple AI video models, the failure mode is predictable:
 
@@ -134,7 +135,42 @@ On a real handoff output, the sheet was 1920×1080 and about 278 KB, with frame 
 
 Neither tool replaces a human review. They just move obvious failures earlier.
 
-## 7. What this does not solve
+## 7. MCP / API access: let an agent call the lock
+
+NineFlow ships a zero-dependency MCP stdio server. It runs on Python 3.8 without the official SDK, and calls the same engine as the CLI: same revision, same state machine, same audit checks.
+
+Add this to Claude Desktop's `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "nineflow": {
+      "command": "python",
+      "args": ["C:/path/to/nineflow/studio.py", "--project-dir",
+               "C:/path/to/nineflow/projects/nine-inning-bottom", "mcp"],
+      "env": {"PYTHONIOENCODING": "utf-8"}
+    }
+  }
+}
+```
+
+WorkBuddy uses the same shape in `%USERPROFILE%\.workbuddy\mcp.json`. Replace the path with your checkout; use `/` in Windows paths, or escape backslashes as `\\`. If the client cannot find `python`, point `command` at the absolute interpreter path.
+
+The server exposes seven tools:
+
+- `nineflow_status` — revision, shots, providers, pack state, validation summary;
+- `nineflow_validate` — character cards, reference hashes, timeline, provider config;
+- `nineflow_variant` — compiled prompt, references, and continuity snapshot for one shot × provider (in-memory only);
+- `nineflow_audit` — the 13-check evidence audit for a job;
+- `nineflow_jobs` — recent jobs, filterable by shot or provider;
+- `nineflow_build` — preview by default; `write=true` performs a full build;
+- `nineflow_contact_sheet` — 3×3 contact sheet from a job's local video.
+
+The boundaries are deliberate: stdio only, no listening port, no network calls; the project directory is fixed at process launch; `write=true` must be explicit and cannot be combined with a single-provider preview; Quota-Flow credentials are never exposed through MCP.
+
+MCP is not a label here. It is the natural distribution surface for the constraints: an agent can query the revision, fetch a compiled variant, and run the audit without reimplementing any of the semantics — and without summarizing away the layered verdict.
+
+## 8. What this does not solve
 
 - It does not eliminate model randomness.
 - It does not guarantee visual quality or acting.
@@ -144,13 +180,13 @@ Neither tool replaces a human review. They just move obvious failures earlier.
 
 NineFlow is not a video model. It is a continuity and evidence layer above models.
 
-## 8. The lesson
+## 9. The lesson
 
 Hash locks make sure every provider sees the same facts. The state machine makes sure they see the same facts *at the same point in time*. Deterministic compilation makes sure they receive the same instructions. Layered audit makes sure that when something breaks, you can prove which layer broke first.
 
 Consistency is not about making models non-random. It is about keeping randomness inside a controlled boundary — and being able to explain every crossing.
 
-Code, demo project, 56 tests, 13 audit checks, ffprobe validation, and the contact-sheet tool:
+Code, demo project, 62 tests, 13 audit checks, 7 MCP tools, ffprobe validation, and the contact-sheet tool:
 
 **https://github.com/bbo777/nineflow**
 

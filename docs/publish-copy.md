@@ -18,7 +18,7 @@
 
 **摘要**
 
-5 个镜头、4 个模型、20 个变体共享同一份上下文修订。本文拆解哈希锁、连续性状态机、确定性编译、13 项分层审计，以及 ffprobe 与九宫格如何把“看起来对”变成可检查的产物。
+5 个镜头、4 个模型、20 个变体共享同一份上下文修订。本文拆解哈希锁、连续性状态机、确定性编译、13 项分层审计、MCP Server 接入，以及 ffprobe 与九宫格如何把“看起来对”变成可检查的产物。
 
 **分类**
 
@@ -26,7 +26,7 @@
 
 **标签**
 
-AI 视频、AIGC、Python、开源、工作流
+MCP、AI 视频、AIGC、Python、开源
 
 **正文**
 
@@ -46,7 +46,7 @@ https://github.com/bbo777/nineflow
 
 **标题**
 
-做了个多模型 AI 视频连续性编排层：哈希锁 + 状态机 + 分层审计
+做了个多模型 AI 视频连续性编排层：MCP Server + 哈希锁 + 状态机
 
 **正文**
 
@@ -59,8 +59,9 @@ https://github.com/bbo777/nineflow
 3. 确定性编译：固定拼接顺序、参考图优先级、截断规则和种子；同一修订重编译必须得到同一提示词哈希。
 4. 分层审计：13 项检查只回答“证据链是否自洽”；job_status / dry_run 单独报告；综合结论再看上下文是否过期。模型失败不等于证据链失败。
 5. 产物校验：ffprobe 检查时长/分辨率/编码，ffmpeg 生成 3×3 九宫格做人工快速对比。
+6. MCP 接入：内置零依赖 MCP stdio Server，Claude Desktop / WorkBuddy 加 9 行 JSON 就能查修订、取编译结果、跑审计，不用重新实现任何语义。
 
-演示项目是 5 镜头 × 4 模型 = 20 个变体，共享一个修订，56 个测试，最近一次 mock 任务 13/13 通过。默认先跑 mock/handoff，不消耗真实配额。
+演示项目是 5 镜头 × 4 模型 = 20 个变体，共享一个修订，62 个测试，最近一次 mock 任务 13/13 通过。默认先跑 mock/handoff，不消耗真实配额。
 
 代码和完整演示：https://github.com/bbo777/nineflow
 
@@ -106,9 +107,15 @@ A failed provider is not an evidence failure. A stale context is not a pass.
 
 5/
 
+NineFlow also ships a zero-dependency MCP stdio server. Claude Desktop or WorkBuddy can query the revision, fetch a compiled variant, run the 13-check audit, or build a preview — no separate API, no reimplementation.
+
+9 lines of JSON.
+
+6/
+
 ffprobe validates downloads. ffmpeg builds a 3×3 contact sheet for human review.
 
-Result: 56 tests, 20 variants, 13/13 checks pass on the demo. Mock/handoff runs cost zero quota.
+Result: 62 tests, 20 variants, 13/13 checks pass on the demo. Mock/handoff runs cost zero quota.
 
 Code: https://github.com/bbo777/nineflow
 
@@ -122,7 +129,7 @@ Show HN
 
 **Title**
 
-Show HN: NineFlow – Hash-locked context for multi-model AI video
+Show HN: NineFlow – MCP server for hash-locked AI video continuity
 
 **URL**
 
@@ -138,8 +145,9 @@ NineFlow treats continuity as an engineering constraint:
 - A state machine replays per-shot state deltas (wardrobe, injuries, props), and the compiler consumes the resulting snapshot instead of the raw character card.
 - A 13-check audit separates evidence integrity from job outcome. A provider failure and a stale-context success are different failure modes.
 - ffprobe validates downloaded media; ffmpeg produces a 3×3 contact sheet for human review.
+- A zero-dependency MCP stdio server exposes status, variant compilation, audit, job listing, preview/full build, and contact sheets to Claude Desktop or WorkBuddy.
 
-The demo is 5 shots × 4 providers = 20 variants with one revision. 56 tests pass. The mock/handoff path costs no quota, so you can exercise the full loop before connecting a real provider.
+The demo is 5 shots × 4 providers = 20 variants with one revision. 62 tests pass. The mock/handoff path costs no quota, so you can exercise the full loop before connecting a real provider.
 
 It does not make models deterministic or judge visual quality. It bounds the randomness and makes every output explainable. I'd especially welcome feedback on the audit model and on continuity data formats for real productions.
 
@@ -147,8 +155,9 @@ It does not make models deterministic or judge visual quality. It bounds the ran
 
 ## 发布检查清单
 
+- [x] GitHub topics：`mcp` / `mcp-server` / `ai-video` / `aigc` / `continuity` / `claude-desktop` / `workbuddy` / `python`
 - [ ] 掘金：登录 → 写文章 → 粘贴 Markdown → 选分类/标签 → 发布 → 记录链接
 - [ ] V2EX：登录 → 分享创造 → 粘贴标题/正文 → 发布 → 记录链接
-- [ ] X：登录 → 按 5 条 Thread 发布 → 记录首条链接
+- [ ] X：登录 → 按 6 条 Thread 发布 → 记录首条链接
 - [ ] Hacker News：登录 → submit → 填标题/URL → 发布后补第一条 comment → 记录链接
 - [ ] 四篇发布后，把链接补回本条清单
