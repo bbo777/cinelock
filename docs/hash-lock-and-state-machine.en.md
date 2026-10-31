@@ -1,7 +1,7 @@
 # How I Used Hash Locks and a State Machine to Fix Multi-Model AI Video Continuity
 
 > One original character, two scenes, five shots, four providers, twenty variants — all compiled from the same context revision `9bb2cfb6449f`.
-> The demo is still being generated shot by shot: the twenty variants are executable, auditable generation specs, not a finished film.
+> The demo is compute-limited and stops at keyframes and context compilation: the twenty variants are executable, auditable generation specs, not a finished film. The repository ships mock placeholder video.
 > The project also ships a zero-dependency MCP server so agents can query the lock directly.
 
 When you generate the same scene with multiple AI video models, the failure mode is predictable:
@@ -187,10 +187,12 @@ Hash locks make sure every provider sees the same facts. The state machine makes
 
 Consistency is not about making models non-random. It is about keeping randomness inside a controlled boundary — and being able to explain every crossing.
 
-Code, demo project, 62 tests, 13 audit checks, 7 MCP tools, ffprobe validation, and the contact-sheet tool:
+Code, demo project, 67 tests, 13 audit checks, external artifact import, 7 MCP tools, ffprobe validation, and the contact-sheet tool:
 
 **https://github.com/bbo777/cinelock**
 
 Run the mock/handoff chain first. It costs no quota and exercises the full loop before you connect a real provider. The showcase lives in `examples/nine-inning-bottom/` and is meant to be forked as a template.
 
-The current results prove the input-side infrastructure, not final image quality. The five shots are still being generated; there is no finished film, and the mock video is a placeholder slate.
+The current results prove the input-side infrastructure, not final image quality. The five shots have not been generated for real: I only have a thin laptop with no discrete GPU, and no budget for hundreds of dollars of generation credits. The repository contains mock placeholder video; the missing step is compute, not context.
+
+That is why Handoff is designed as compute crowdsourcing. I package the references, prompts, timeline, and continuity state for each shot; anyone can generate it with their own model credits, then bind the file back to the current revision and prompt hash with `studio.py import` and run the same 13-check audit. Claim a shot in [Issue #11](https://github.com/bbo777/cinelock/issues/11). Import proves only that the file is bound to the declared context; it does not prove who generated it or judge visual continuity, and the audit output says so.

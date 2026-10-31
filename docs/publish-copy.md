@@ -7,6 +7,8 @@
 - 仓库：https://github.com/bbo777/cinelock
 
 > 截至 2026-10-31，掘金、V2EX、X、Hacker News 在当前浏览器中均未登录。以下文案已按平台限制准备好，登录后可直接粘贴发布。
+>
+> 演示状态：因算力受限，停留在关键帧与上下文编译阶段；仓库附带 mock 占位视频。Handoff 是算力众包入口，认领见 Issue #11。所有文案不得写成“正在生成中”或“即将成片”。
 
 ---
 
@@ -18,7 +20,7 @@
 
 **摘要**
 
-1 个原创角色、2 个场景、5 个镜头、4 个模型、20 个变体共享同一份上下文修订。本文拆解哈希锁、连续性状态机、确定性编译、13 项分层审计、MCP Server 接入，以及 ffprobe 与九宫格如何把“看起来对”变成可检查的产物。演示项目仍在逐镜生成中，当前没有成片。
+1 个原创角色、2 个场景、5 个镜头、4 个模型、20 个变体共享同一份上下文修订。本文拆解哈希锁、连续性状态机、确定性编译、13 项分层审计、MCP Server 接入，以及 ffprobe 与九宫格如何把“看起来对”变成可检查的产物。演示项目因算力受限，停留在关键帧与上下文编译阶段，当前只有 mock 占位视频；Handoff 与 Issue #11 把生成环节开放给社区。
 
 **分类**
 
@@ -61,7 +63,11 @@ https://github.com/bbo777/cinelock
 5. 产物校验：ffprobe 检查时长/分辨率/编码，ffmpeg 生成 3×3 九宫格做人工快速对比。
 6. MCP 接入：内置零依赖 MCP stdio Server，Claude Desktop / WorkBuddy 加 9 行 JSON 就能查修订、取编译结果、跑审计，不用重新实现任何语义。
 
-演示项目是 1 个原创角色、2 个场景、5 镜头 × 4 模型 = 20 个变体，共享一个修订，62 个测试，最近一次 mock 任务 13/13 通过。默认先跑 mock/handoff，不消耗真实配额。项目仍是 WIP：底层引擎和审计闭环已经完成，5 个镜头正在逐镜生成，当前没有成片。
+演示项目是 1 个原创角色、2 个场景、5 镜头 × 4 模型 = 20 个变体，共享一个修订，67 个测试，最近一次 mock 任务 13/13 通过。默认先跑 mock/handoff，不消耗真实配额。
+
+说点实话：我只有一台没有独显的 ASUS VivoBook，也买不起几百上千元的生成额度。所以引擎、哈希锁、状态机、审计闭环都做完了，5 个镜头却没有真实生成，仓库里是 mock 占位视频。这不是“正在生成中”，是“卡在算力这一步”。
+
+于是我把 Handoff 做成了算力众包：我把每个镜头的参考图、提示词、时间线和连续状态打包，你用自己的模型额度生成，再用 `studio.py import` 把结果绑回当前修订和提示词哈希，跑同一套 13 项审计。认领入口在 Issue #11。
 
 代码和完整演示：https://github.com/bbo777/cinelock
 
@@ -115,11 +121,22 @@ CineLock also ships a zero-dependency MCP stdio server. Claude Desktop or WorkBu
 
 ffprobe validates downloads. ffmpeg builds a 3×3 contact sheet for human review.
 
-Result: 62 tests, 20 variants, 13/13 checks pass on the demo. Mock/handoff runs cost zero quota.
+Result: 67 tests, 20 variants, 13/13 checks pass on the demo. Mock/handoff runs cost zero quota.
 
-This is still WIP: the continuity engine and audit loop are done; the five shots are being generated now. No finished film yet — and the README says so.
+But the five shots are not generated yet. I only have a thin laptop with no GPU and no budget for video credits. The repo ships mock placeholders. The missing step is compute, not context.
 
 Code: https://github.com/bbo777/cinelock
+
+7/
+
+So Handoff becomes compute crowdsourcing:
+
+- I package refs, prompts, timeline, continuity state
+- you generate with your own model credits
+- `studio.py import` binds the file to the current revision + prompt hash
+- the same 13 checks run on it
+
+Claim a shot: https://github.com/bbo777/cinelock/issues/11
 
 ---
 
@@ -148,8 +165,11 @@ CineLock treats continuity as an engineering constraint:
 - A 13-check audit separates evidence integrity from job outcome. A provider failure and a stale-context success are different failure modes.
 - ffprobe validates downloaded media; ffmpeg produces a 3×3 contact sheet for human review.
 - A zero-dependency MCP stdio server exposes status, variant compilation, audit, job listing, preview/full build, and contact sheets to Claude Desktop or WorkBuddy.
+- `import` binds an externally generated file to the current revision and prompt hash, records its SHA-256 and ffprobe metadata, and runs the same 13-check audit.
 
-The demo is 1 original character, 2 scenes, 5 shots × 4 providers = 20 variants with one revision. 62 tests pass. The mock/handoff path costs no quota, so you can exercise the full loop before connecting a real provider. It is explicitly WIP: the engine, hash lock, state machine, and audit loop are complete; the five shots are still being generated, and there is no finished film.
+The demo is 1 original character, 2 scenes, 5 shots × 4 providers = 20 variants with one revision. 67 tests pass. The mock/handoff path costs no quota, so you can exercise the full loop before connecting a real provider.
+
+The five shots are not generated for real. I only have a thin laptop with no discrete GPU and no budget for generation credits, so the repository ships mock placeholders. The missing step is compute, not context. I package every shot as a verifiable handoff pack and invite people to generate one with their own credits, then bind it back through `import` and the audit. Claim a shot in Issue #11.
 
 It does not make models deterministic or judge visual quality. It bounds the randomness and makes every output explainable. I'd especially welcome feedback on the audit model and on continuity data formats for real productions.
 
@@ -159,10 +179,10 @@ It does not make models deterministic or judge visual quality. It bounds the ran
 
 - [x] GitHub topics：`mcp` / `mcp-server` / `ai-video` / `aigc` / `continuity` / `claude-desktop` / `workbuddy` / `python`
 - [x] GitHub 仓库改名 `nineflow` → `cinelock`；旧 URL 已验证返回 301 重定向到 `https://github.com/bbo777/cinelock`
-- [x] 社区任务 Issues #1–#10：`https://github.com/bbo777/cinelock/issues`
+- [x] 社区任务 Issues #1–#11：`https://github.com/bbo777/cinelock/issues`（#11 为算力赞助入口）
 - [x] 公开看板 Nine Inning Bottom：`https://github.com/users/bbo777/projects/5`
 - [ ] 掘金：登录 → 写文章 → 粘贴 Markdown → 选分类/标签 → 发布 → 记录链接
 - [ ] V2EX：登录 → 分享创造 → 粘贴标题/正文 → 发布 → 记录链接
-- [ ] X：登录 → 按 6 条 Thread 发布 → 记录首条链接
+- [ ] X：登录 → 按 7 条 Thread 发布 → 记录首条链接
 - [ ] Hacker News：登录 → submit → 填标题/URL → 发布后补第一条 comment → 记录链接
 - [ ] 四篇发布后，把链接补回本条清单
