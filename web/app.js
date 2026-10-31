@@ -272,7 +272,7 @@ function translateChange(characterId, change) {
 // ---------- networking ----------
 
 async function api(path, options = {}) {
-  const headers = Object.assign({ "X-NineFlow": "studio" }, options.headers || {});
+  const headers = Object.assign({ "X-CineLock": "studio" }, options.headers || {});
   const init = { method: options.method || "GET", headers };
   if (options.body !== undefined) {
     headers["Content-Type"] = "application/json";

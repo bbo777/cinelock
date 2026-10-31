@@ -1,6 +1,7 @@
 # How I Used Hash Locks and a State Machine to Fix Multi-Model AI Video Continuity
 
-> Five shots, four providers, twenty variants — all compiled from the same context revision `3363f8fde6e7`.
+> One original character, two scenes, five shots, four providers, twenty variants — all compiled from the same context revision `9bb2cfb6449f`.
+> The demo is still being generated shot by shot: the twenty variants are executable, auditable generation specs, not a finished film.
 > The project also ships a zero-dependency MCP server so agents can query the lock directly.
 
 When you generate the same scene with multiple AI video models, the failure mode is predictable:
@@ -14,7 +15,7 @@ The result is not one film. It is four films that happen to share a script.
 
 The core contradiction is simple: **probabilistic models are non-deterministic; narrative continuity is not negotiable.** Prompt engineering alone cannot close that gap, because the model never sees "the previous shot" — it only sees whatever context you hand it this time.
 
-NineFlow is a local orchestration layer built around a different premise: don't try to make the model deterministic. Make the **input, the state, and the evidence** deterministic.
+CineLock (formerly NineFlow) is a local orchestration layer built around a different premise: don't try to make the model deterministic. Make the **input, the state, and the evidence** deterministic.
 
 ## 1. Define consistency as four checkable dimensions
 
@@ -25,7 +26,7 @@ NineFlow is a local orchestration layer built around a different premise: don't 
 3. **Scene** — location, time of day, lighting, and composition come from one timeline.
 4. **Provenance** — every output can be traced to a provider, a context revision, a prompt, and a set of reference hashes.
 
-Most pipelines only handle the first dimension: feed the model the same face and hope. NineFlow turns all four into data structures, then locks them.
+Most pipelines only handle the first dimension: feed the model the same face and hope. CineLock turns all four into data structures, then locks them.
 
 ## 2. The hash lock: make context a verifiable object
 
@@ -53,7 +54,7 @@ Now the semantics are right:
 
 **Lock the fact, not the ledger.**
 
-The engine fingerprint covers the NineFlow version plus the source hashes of the context, compiler, and continuity modules. If the compiler changes, old jobs become "historical context" instead of being silently treated as current.
+The engine fingerprint covers the CineLock version plus the source hashes of the context, compiler, and continuity modules. If the compiler changes, old jobs become "historical context" instead of being silently treated as current.
 
 Every job records the full `source_hashes`, the engine fingerprint, the per-shot snapshot hash, prompt hashes, variant hash, reference hashes, provider, seed, outputs, and media probe results. Execution refuses to start if the current revision no longer matches the pack. Audit recomputes everything afterward.
 
@@ -104,7 +105,7 @@ The compiler fixes block order, reference priority, truncation rules, duration r
 
 The audit includes a `recompile` check for exactly this reason. Without it, "reproducible" is just a claim.
 
-In the demo project: 5 shots × 4 providers = 20 variants, 56 reference usages, one revision.
+In the demo project: 1 original character, 2 scenes, 5 shots × 4 providers = 20 variants, 56 reference usages, one revision (`9bb2cfb6449f`).
 
 ## 5. Layered audit: evidence is not the same as job outcome
 
@@ -137,17 +138,17 @@ Neither tool replaces a human review. They just move obvious failures earlier.
 
 ## 7. MCP / API access: let an agent call the lock
 
-NineFlow ships a zero-dependency MCP stdio server. It runs on Python 3.8 without the official SDK, and calls the same engine as the CLI: same revision, same state machine, same audit checks.
+CineLock ships a zero-dependency MCP stdio server. It runs on Python 3.8 without the official SDK, and calls the same engine as the CLI: same revision, same state machine, same audit checks.
 
 Add this to Claude Desktop's `claude_desktop_config.json` (Windows: `%APPDATA%\Claude\claude_desktop_config.json`), then restart the client:
 
 ```json
 {
   "mcpServers": {
-    "nineflow": {
+    "cinelock": {
       "command": "python",
-      "args": ["C:/path/to/nineflow/studio.py", "--project-dir",
-               "C:/path/to/nineflow/projects/nine-inning-bottom", "mcp"],
+      "args": ["C:/path/to/cinelock/studio.py", "--project-dir",
+               "C:/path/to/cinelock/examples/nine-inning-bottom", "mcp"],
       "env": {"PYTHONIOENCODING": "utf-8"}
     }
   }
@@ -158,13 +159,13 @@ WorkBuddy uses the same shape in `%USERPROFILE%\.workbuddy\mcp.json`. Replace th
 
 The server exposes seven tools:
 
-- `nineflow_status` — revision, shots, providers, pack state, validation summary;
-- `nineflow_validate` — character cards, reference hashes, timeline, provider config;
-- `nineflow_variant` — compiled prompt, references, and continuity snapshot for one shot × provider (in-memory only);
-- `nineflow_audit` — the 13-check evidence audit for a job;
-- `nineflow_jobs` — recent jobs, filterable by shot or provider;
-- `nineflow_build` — preview by default; `write=true` performs a full build;
-- `nineflow_contact_sheet` — 3×3 contact sheet from a job's local video.
+- `cinelock_status` — revision, shots, providers, pack state, validation summary;
+- `cinelock_validate` — character cards, reference hashes, timeline, provider config;
+- `cinelock_variant` — compiled prompt, references, and continuity snapshot for one shot × provider (in-memory only);
+- `cinelock_audit` — the 13-check evidence audit for a job;
+- `cinelock_jobs` — recent jobs, filterable by shot or provider;
+- `cinelock_build` — preview by default; `write=true` performs a full build;
+- `cinelock_contact_sheet` — 3×3 contact sheet from a job's local video.
 
 The boundaries are deliberate: stdio only, no listening port, no network calls; the project directory is fixed at process launch; `write=true` must be explicit and cannot be combined with a single-provider preview; Quota-Flow credentials are never exposed through MCP.
 
@@ -178,7 +179,7 @@ MCP is not a label here. It is the natural distribution surface for the constrai
 - It does not auto-fix continuity errors; it detects, blocks, and records them.
 - It is only as good as the timeline's `state_delta`. Bad continuity data is propagated faithfully — garbage in, garbage out, but now with a hash.
 
-NineFlow is not a video model. It is a continuity and evidence layer above models.
+CineLock is not a video model. It is a continuity and evidence layer above models.
 
 ## 9. The lesson
 
@@ -188,6 +189,8 @@ Consistency is not about making models non-random. It is about keeping randomnes
 
 Code, demo project, 62 tests, 13 audit checks, 7 MCP tools, ffprobe validation, and the contact-sheet tool:
 
-**https://github.com/bbo777/nineflow**
+**https://github.com/bbo777/cinelock**
 
-Run the mock/handoff chain first. It costs no quota and exercises the full loop before you connect a real provider.
+Run the mock/handoff chain first. It costs no quota and exercises the full loop before you connect a real provider. The showcase lives in `examples/nine-inning-bottom/` and is meant to be forked as a template.
+
+The current results prove the input-side infrastructure, not final image quality. The five shots are still being generated; there is no finished film, and the mock video is a placeholder slate.

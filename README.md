@@ -1,77 +1,112 @@
-# NineFlow · 九局下半
+# CineLock
 
 **AI 视频工业化的连续性基础设施。**
 
+> CineLock（原 NineFlow）是一个 AI 视频上下文治理引擎。本仓库自带《九局下半》作为演示项目。
+
+![tests](https://img.shields.io/badge/tests-62%20passing-brightgreen)
+![python](https://img.shields.io/badge/python-3.8%2B-blue)
+![license](https://img.shields.io/badge/license-MIT-green)
+![mcp](https://img.shields.io/badge/MCP-stdio%20server-6f42c1)
+
 AI 视频工业化最核心的矛盾，不是“模型会不会生成”，而是：**概率模型每次都在重新采样，影视叙事却要求角色、服装、伤情、道具、场景和镜头关系绝对连续。**
 
-NineFlow 不试图消除概率性，而是把不确定性约束进一条可锁定、可复现、可审计的上下文流水线：每个模型共享同一套参考图、同一份角色卡、同一条时间线和同一个上下文修订；任何事实源变化都会生成新修订，旧包拒绝执行。每次生成都会留下提示词、参考图哈希、渲染参数和输出哈希，让“这一镜为什么变了”可以追到具体版本。
+CineLock 不试图消除概率性，而是把不确定性约束进一条可锁定、可复现、可审计的上下文流水线：每个模型共享同一套参考图、同一份角色卡、同一条时间线和同一个上下文修订；任何事实源变化都会生成新修订，旧包拒绝执行。每次生成都会留下提示词、参考图哈希、渲染参数和输出哈希，让“这一镜为什么变了”可以追到具体版本。
 
 **一句话：把概率模型的不确定性，约束进影视叙事要求的连续性边界内。**
 
-同时内置零依赖 **MCP stdio Server**：把项目状态、编译预览、审计和九宫格暴露为 7 个工具，Claude Desktop / WorkBuddy 加 9 行配置即可调用同一套哈希锁与状态机。
+---
 
-> 当前仓库是**可跑通的占位骨架**：1 个角色、2 个场景、5 个镜头、4 个启用厂商（mock / qwenwan / yuanbao / handoff），共 20 个变体；另有 6 家厂商已写入矩阵但当前 CLI 未注册，默认不参与 build。角色、台词、参考图均为演示数据，替换真实内容后重新 `build` 即可。
->
-> 本项目**不修改 Quota-Flow 源码**，也不保存任何 Cookie、API Key 或账号登录态。
+## 问题不在生成，而在连续性
+
+今天做 AI 视频，最不缺的是“生成一次好看的画面”。真正让项目失控的是下面四件事：
+
+| 痛点 | 行业现状 | CineLock 的做法 |
+| --- | --- | --- |
+| **参考不一致** | 每个模型、每个镜头手工上传参考图，版本全靠人记 | 参考图库是唯一索引，文件哈希进入修订锁；所有变体共享同一个 `context_revision` |
+| **状态被重置** | 提示词里写“衣服脏了”，下一镜模型又给一件干净球衣 | `state_delta` 按镜头顺序演化，编译前就确定服装、伤情、道具、表情与场景 |
+| **提示词漂移** | 每个模型各写一套描述，风格和角色细节越跑越偏 | 确定性编译器按固定顺序生成提示词，记录 `prompt_sha256` 与 `variant_sha256` |
+| **生成不可追溯** | 最后只剩视频，无法回答当时用了哪版角色卡、哪张参考图 | 任务账本保存 `source_hashes`、快照、引擎指纹、投影与产物哈希，可离线审计 |
+
+大多数 AI 视频工具管理的是**一次生成**；CineLock 管理的是**一条叙事时间线**。
+
+它借用了 Git 的两个思路：
+
+1. **哈希锁**：内容变了，修订号就变；内容没变，修订号就稳定。旧包不能冒充新包，新包也不能悄悄覆盖旧记录。
+2. **状态机**：角色状态不是提示词里的形容词，而是按镜头顺序累积、可重放、可快照的结构化数据。
 
 ---
 
-## 核心矛盾与解法
+## 🎬 官方演示关卡：AI 漫剧《九局下半》（WIP）
 
-多模型并行时，这组矛盾会落成四个具体的穿帮来源：
+> 🚧 **正在进行的实战项目**：AI 漫剧《九局下半》（WIP）
 
-- **参考不一致**：每个模型拿到的图不一样；
-- **状态被重置**：上一镜的泥污、伤口、道具到下一镜消失；
-- **提示词漂移**：风格和角色描述各写各的；
-- **生成不可追溯**：只剩视频，无法回答当时用了哪版角色卡。
+《九局下半》不是仓库的主体，而是 CineLock 的**官方演示关卡**：一个刻意保留真实复杂度的测试用例，用来验证“多镜头、多厂商、角色状态持续演化”时，上下文层能不能兜住。
 
-NineFlow 的答案不是“让模型变稳定”，而是把叙事状态变成单一事实源，用四层机制约束概率性：
+### 当前状态
 
-1. **上下文哈希锁**：项目、角色卡、参考图文件哈希、时间线、厂商能力、提示词词表与编译引擎指纹共同生成 `context_revision`；所有变体共享一个修订，旧包拒绝执行。
-2. **连续性状态机**：`state_delta` 按镜头顺序演化，生成每个镜头的服装、伤情、道具、表情与场景快照；所有厂商从同一份快照编译。
-3. **生成账本**：每个任务记录修订、提示词、参考图哈希、渲染参数、seed 与输出哈希，让偏离可以归因。
-4. **存证与审计**：任务额外保存 `source_hashes`、完整性快照、引擎指纹与厂商投影；`audit` 重算修订锁、重放 `state_delta`、核验参考图和产物哈希，并用同一修订重编译比对，回答“这份记录还是不是当初那一份”。
+- 系统底层引擎、上下文锁、状态机与审计闭环已完成，**62 项测试通过**；
+- **5 个镜头、4 个启用厂商、20 个变体、56 次参考图引用**共享同一个修订；
+- mock 出片、handoff 包、ffprobe 校验、九宫格抽帧、13 项审计均已跑通；
+- 视频画面正在通过本框架（结合 handoff 模式与 Quota-Flow）逐个镜头生成中；
+- **目前没有成片**。真实厂商出片仍受登录态与公网参考图 URL 限制，仓库不会把 mock 占位视频说成成片。
 
-> **边界**：NineFlow 保证的是**输入侧连续性与可追溯性**，不是输出侧像素级一致。模型仍可能忽略约束；单参考厂商（qwenwan / yuanbao）只适合链路验证，不作为一致性基线。输出侧的身份/服装核验仍需补。
+### 它到底在演示什么
 
-### 它回答三个问题
-
-- **这一镜应该是什么状态？** `state_delta` 按镜头顺序演化，编译前就确定服装、伤情、道具、表情与场景。
-- **每个模型拿到的是不是同一份输入？** 所有变体共享一个 `context_revision`；厂商截断参考图时会记录 `dropped_references`，不假装各家输入相等。
-- **这份记录还是不是当初那一份？** `audit` 离线重算修订锁、重放状态机、重编译比对，并核验参考图与产物哈希。
-
-### 数据流
+当前演示包含 **1 个原创角色、2 个场景、5 个镜头**。数量不大，但状态链是完整的：
 
 ```text
-事实源（项目 / 角色卡 / 参考图 / 时间线 / 厂商矩阵 / 词表）
-        │  文件哈希 + 引擎指纹
-        ▼
-context_revision ── build ──▶ Context Pack（所有镜头 × 厂商共享同一修订）
-        │                              │
-        │                              ├─ mock / handoff / Quota-Flow 执行
-        │                              ▼
-        └──────────────▶ jobs/<job_id>.json（快照 + source_hashes + 产物哈希）
-                                       │
-                                       ▼
-                    audit（重算修订锁 / 重放 state_delta / 重编译比对 / 核验文件）
+E01-001  home_clean    休息区 · 黄昏    建立脸、7 号球衣、球棒
+E01-002  home_dirty    休息区 · 黄昏    泥污从这里开始，后续不能重置
+E01-003  home_dirty    打击区 · 黄昏    空间转换，泥污与球棒继续
+E01-004  home_injured  打击区 · 黄昏    左脸淤青、下唇破口、右袖撕裂
+E01-005  home_injured  打击区 · 黄昏    伤情与撕裂袖口延续到收尾
 ```
 
----
+高风险的 E01-004 是特写：伤情从这里开始，下一镜必须延续；E01-005 是大远景：同一套角色状态，不做无解释重置。每个镜头 × 每个厂商的提示词、参考图顺序、投影和快照，都由 CineLock 从同一份时间线编译。
 
-## 已验证的能力
+### 概念板与关键帧测试
 
-- `python -m unittest discover -s tests -v`：**62 项测试通过**。
-- mock 适配器：真实生成 5s / 1920×1080 / 24fps 的 H.264 占位视频（Pillow 底板 + ffmpeg），并用 ffprobe 回读时长、分辨率与编码。
-- media 模块：ffprobe 校验本地视频；ffmpeg 均匀抽 9 帧拼成 1920×1080 的 3×3 九宫格。
-- handoff 适配器：导出参考图、正向/负向提示词、manifest、README 的完整手工包。
-- Quota-Flow CLI 0.1.0：已安装并可被发现（自动使用自带 Node 22）；`generate` 子进程、JSON 解析、任务账本已跑通。
-- Quota-Flow 适配器：能识别 CLI 的 dry-run 回包（不会误记为出片）、拒绝厂商静默替换、检查 Node/公网 URL 前置条件；下载后的视频必须通过 ffprobe 校验才算成功（没有 ffprobe 时保留文件但给出警告）。
-- 连续性审计：任务保存上下文快照与引擎指纹；CLI 与看板都能逐项核验 13 项检查——修订锁、快照完整性、状态机重放、提示词、参考图、产物哈希、同修订重编译等，并能识别旧任务与历史修订。审计结果分为**证据链状态**与**任务状态**两层，不再把“任务失败”误写成“存证失败”。
-- 哈希闭环：`refresh-hashes` 可把被替换参考图的记录哈希修复到实际文件；全量 `build` 才会写共享包，`build --provider` 只做预览。
-- 本地看板：时间线、连续性快照、厂商矩阵、变体抽屉、任务账本、审计抽屉、视频预览、任务抽屉内一键生成抽帧九宫格、UI 内发起 mock 生成；桌面与 390px 窄屏均已验收。
-- 安全校验：Host/Origin 校验、POST 自定义头、文件根目录白名单、Range 206、CSP。
+![CineLock E01 continuity concept board](docs/images/showcase-concept-board.png)
 
-**未验证 / 当前限制**：真实 Quota-Flow 厂商出片。CLI 已安装，但本机没有 qwenwan / yuanbao 登录凭据，占位参考图也没有公网 `https` URL；适配器会在执行前如实阻断，或在无凭据时把 CLI 的 dry-run 记为 `dry_run`。此外，已安装的 CLI 0.1.0 只注册了 `qwenwan`、`yuanbao` 两家（且都只支持单图首帧），README 中的 Dola / 百炼 / 智谱 / 豆包 / 火山 / TokenHub 尚未在该 CLI 中落地。
+> 由占位场景板与状态参考图拼出的概念板，用来检查“镜头顺序 + 状态演化”是否讲得通。**它不是模型成片，也不代表最终画风。**
+
+### 九宫格抽帧管线
+
+![CineLock contact sheet](docs/images/showcase-contact-sheet.png)
+
+> 1920×1080、9 帧均匀采样的 3×3 九宫格。当前视频是 mock 占位底板，用来验证抽帧、审片和任务账本链路，**不代表真实模型质量**。
+
+### 本地看板
+
+![CineLock dashboard](docs/images/showcase-dashboard.png)
+
+> 修订、时间线、连续性快照、厂商矩阵与任务账本在同一个本地视图里。看板只绑定 `127.0.0.1`。
+
+### 审计 13/13
+
+![CineLock audit 13/13](docs/images/showcase-audit.png)
+
+> 真实 CLI 输出：证据链 13 项通过。审计只证明任务记录、参考图、产物与约定修订仍然一致，**不证明成片里的像素级连续性**。
+
+### 参考图库
+
+![CineLock reference bank](docs/images/showcase-reference-bank.png)
+
+> 6 张角色状态图 + 2 张场景板，全部是仓库内生成的原创几何占位资产，不包含任何第三方 IP 素材。替换为正式设定后，重新 `build` 即可生成新的上下文修订。
+
+项目的完整配置、时间线和 `state_delta` 在 [`examples/nine-inning-bottom/`](examples/nine-inning-bottom/)：
+
+```text
+examples/nine-inning-bottom/
+  project.json          项目 / 风格 / 画幅 / 默认策略
+  characters.json       角色卡
+  reference_bank.json   参考图库
+  timeline.json         场景、镜头、连续性 state_delta
+  refs/                 占位参考图
+```
+
+E01-004 的真实手工交接包（5 张参考图 + 正向/负向提示词 + manifest）在 [`docs/showcase/handoff-E01-004/`](docs/showcase/handoff-E01-004/)；其余镜头与厂商的编译结果在 `context/shots/` 下。
 
 ---
 
@@ -82,7 +117,7 @@ context_revision ── build ──▶ Context Pack（所有镜头 × 厂商共
 - Python 3.8+（已在 3.8.10 验证）。
 - Pillow：mock 占位底板需要。
 - ffmpeg / ffprobe：mock 视频编码、视频抽帧九宫格、Quota-Flow 下载产物校验需要。缺少 ffprobe 时仍可下载视频，但任务会带“未做媒体完整性校验”的警告；缺少 ffmpeg 时无法出片或生成九宫格。
-- Node.js ≥ 20 + Quota-Flow CLI：仅真实厂商执行需要。本机已安装 CLI 0.1.0（自带 Node 22，NineFlow 可自动发现，不依赖 PATH 里的默认 Node）。
+- Node.js ≥ 20 + Quota-Flow CLI：仅真实厂商执行需要。本机已安装 CLI 0.1.0（自带 Node 22，CineLock 可自动发现，不依赖 PATH 里的默认 Node）。
 
 ```bash
 pip install -r requirements.txt
@@ -97,7 +132,7 @@ python studio.py build         # 编译全部厂商，生成 Context Pack
 python studio.py serve         # 打开看板 http://127.0.0.1:8787/
 ```
 
-`serve` 默认自动打开浏览器；加 `--no-open` 可关闭。所有生成产物都在项目目录内，不会写到系统临时目录。
+默认读取 `examples/nine-inning-bottom/`；也可以用 `--project-dir` 指向你自己的项目。`serve` 默认自动打开浏览器，加 `--no-open` 可关闭。
 
 ### CLI 常用命令
 
@@ -137,34 +172,81 @@ python studio.py audit --id <job_id>
 python studio.py audit --id <job_id> --json
 
 # 以 MCP stdio Server 启动（Claude Desktop / WorkBuddy）
-python studio.py --project-dir projects/nine-inning-bottom mcp
+python studio.py --project-dir examples/nine-inning-bottom mcp
 ```
 
 全局参数放在子命令之前，例如：
 
 ```bash
-python studio.py --project-dir projects/nine-inning-bottom --config-dir config status
+python studio.py --project-dir examples/nine-inning-bottom --config-dir config status
 ```
 
-### 本地看板
+---
 
-`python studio.py serve` 默认打开 `http://127.0.0.1:8787/`，端口可用 `--port` 修改。看板与 CLI 读取同一份 Context Pack 和任务账本：
+## 它是什么：四层机制
 
-- 顶栏显示当前修订与包状态，事实源变化后会出现“上下文已变化”横幅；
-- 时间线按场景展开镜头，右侧显示该镜的连续性快照；
-- 厂商矩阵对比各模型的支持模式、参考上限、时长、阻断原因与警告；
-- 点变体打开抽屉，查看完整提示词、负向词、参考图、投影与告警；
-- 任务账本中每个任务都有“审计”入口，抽屉会运行 13 项核验并支持“重新核验”；
-- 有本地视频的任务可以在抽屉里一键生成抽帧九宫格，核对运镜、角色外观与连续性；
-- 视频预览与 UI 内 mock 生成。
+### 1. 上下文哈希锁
 
-看板只绑定 `127.0.0.1`，不要暴露到局域网或公网。
+事实源（项目、角色卡、参考图、时间线、厂商矩阵、提示词词表、编译引擎指纹）共同生成 `context_revision`。所有变体共享一个修订；构建时若发现不一致直接失败；执行前若发现磁盘上的上下文已变化、包内还是旧修订，`execute` 直接拒绝。
+
+### 2. 连续性状态机
+
+`state_delta` 按镜头顺序演化，生成每个镜头的服装、伤情、道具、表情与场景快照。所有厂商从同一份快照编译，不允许各自维护角色状态。
+
+### 3. 生成账本
+
+每个任务记录修订、提示词、参考图哈希、渲染参数、seed 与输出哈希。任务额外保存 `source_hashes`、完整性快照、引擎指纹与厂商投影。
+
+### 4. 存证与审计
+
+`audit` 重算修订锁、重放 `state_delta`、核验参考图和产物哈希，并用同一修订重编译比对，回答“这份记录还是不是当初那一份”。
+
+> **边界**：CineLock 保证的是**输入侧连续性与可追溯性**，不是输出侧像素级一致。模型仍可能忽略约束；单参考厂商（qwenwan / yuanbao）只适合链路验证，不作为一致性基线。输出侧的身份/服装核验仍需补。
+
+### 它回答三个问题
+
+- **这一镜应该是什么状态？** `state_delta` 按镜头顺序演化，编译前就确定服装、伤情、道具、表情与场景。
+- **每个模型拿到的是不是同一份输入？** 所有变体共享一个 `context_revision`；厂商截断参考图时会记录 `dropped_references`，不假装各家输入相等。
+- **这份记录还是不是当初那一份？** `audit` 离线重算修订锁、重放状态机、重编译比对，并核验参考图与产物哈希。
+
+### 数据流
+
+```text
+事实源（项目 / 角色卡 / 参考图 / 时间线 / 厂商矩阵 / 词表）
+        │  文件哈希 + 引擎指纹
+        ▼
+context_revision ── build ──▶ Context Pack（所有镜头 × 厂商共享同一修订）
+        │                              │
+        │                              ├─ mock / handoff / Quota-Flow 执行
+        │                              ▼
+        └──────────────▶ jobs/<job_id>.json（快照 + source_hashes + 产物哈希）
+                                       │
+                                       ▼
+                    audit（重算修订锁 / 重放 state_delta / 重编译比对 / 核验文件）
+```
+
+---
+
+## 已验证的能力
+
+- `cd tests && python -m unittest discover -s . -t . -v`：**62 项测试通过**。
+- mock 适配器：真实生成 5s / 1920×1080 / 24fps 的 H.264 占位视频（Pillow 底板 + ffmpeg），并用 ffprobe 回读时长、分辨率与编码。
+- media 模块：ffprobe 校验本地视频；ffmpeg 均匀抽 9 帧拼成 1920×1080 的 3×3 九宫格。
+- handoff 适配器：导出参考图、正向/负向提示词、manifest、README 的完整手工包。
+- Quota-Flow CLI 0.1.0：已安装并可被发现（自动使用自带 Node 22）；`generate` 子进程、JSON 解析、任务账本已跑通。
+- Quota-Flow 适配器：能识别 CLI 的 dry-run 回包（不会误记为出片）、拒绝厂商静默替换、检查 Node/公网 URL 前置条件；下载后的视频必须通过 ffprobe 校验才算成功（没有 ffprobe 时保留文件但给出警告）。
+- 连续性审计：任务保存上下文快照与引擎指纹；CLI 与看板都能逐项核验 13 项检查——修订锁、快照完整性、状态机重放、提示词、参考图、产物哈希、同修订重编译等，并能识别旧任务与历史修订。审计结果分为**证据链状态**与**任务状态**两层，不再把“任务失败”误写成“存证失败”。
+- 哈希闭环：`refresh-hashes` 可把被替换参考图的记录哈希修复到实际文件；全量 `build` 才会写共享包，`build --provider` 只做预览。
+- 本地看板：时间线、连续性快照、厂商矩阵、变体抽屉、任务账本、审计抽屉、视频预览、任务抽屉内一键生成抽帧九宫格、UI 内发起 mock 生成；桌面与 390px 窄屏均已验收。
+- 安全校验：Host/Origin 校验、POST 自定义头、文件根目录白名单、Range 206、CSP。
+
+**未验证 / 当前限制**：真实 Quota-Flow 厂商出片。CLI 已安装，但本机没有 qwenwan / yuanbao 登录凭据，占位参考图也没有公网 `https` URL；适配器会在执行前如实阻断，或在无凭据时把 CLI 的 dry-run 记为 `dry_run`。此外，已安装的 CLI 0.1.0 只注册了 `qwenwan`、`yuanbao` 两家（且都只支持单图首帧），README 中的 Dola / 百炼 / 智谱 / 豆包 / 火山 / TokenHub 尚未在该 CLI 中落地。
 
 ---
 
 ## MCP / API 接入
 
-NineFlow 内置一个零依赖的 MCP stdio Server。Claude Desktop、WorkBuddy 或其他 MCP 客户端可以直接调用同一套哈希锁、状态机与审计能力，不需要额外服务或 API Key。
+CineLock 内置一个零依赖的 MCP stdio Server。Claude Desktop、WorkBuddy 或其他 MCP 客户端可以直接调用同一套哈希锁、状态机与审计能力，不需要额外服务或 API Key。
 
 ### 10 行配置
 
@@ -173,35 +255,35 @@ NineFlow 内置一个零依赖的 MCP stdio Server。Claude Desktop、WorkBuddy 
 ```json
 {
   "mcpServers": {
-    "nineflow": {
+    "cinelock": {
       "command": "python",
-      "args": ["C:/path/to/nineflow/studio.py", "--project-dir",
-               "C:/path/to/nineflow/projects/nine-inning-bottom", "mcp"],
+      "args": ["C:/path/to/cinelock/studio.py", "--project-dir",
+               "C:/path/to/cinelock/examples/nine-inning-bottom", "mcp"],
       "env": {"PYTHONIOENCODING": "utf-8"}
     }
   }
 }
 ```
 
-WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；如果文件里已有其他 server，把 `nineflow` 这一项合并进 `mcpServers` 即可。
+WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；如果文件里已有其他 server，把 `cinelock` 这一项合并进 `mcpServers` 即可。
 
-把 `C:/path/to/nineflow` 换成仓库实际路径。若客户端找不到 `python`，把 `"command"` 换成 `where python` 返回的绝对路径。JSON 里的 Windows 路径请使用 `/`，或把 `\` 转义为 `\\`。
+把 `C:/path/to/cinelock` 换成仓库实际路径。若客户端找不到 `python`，把 `"command"` 换成 `where python` 返回的绝对路径。JSON 里的 Windows 路径请使用 `/`，或把 `\` 转义为 `\\`。
 
 ### 可用工具
 
 | 工具 | 作用 | 是否写入 |
 | --- | --- | --- |
-| `nineflow_status` | 当前修订、镜头、厂商、Pack 状态与校验摘要 | 否 |
-| `nineflow_validate` | 校验角色卡、参考图哈希、时间线与厂商配置 | 否 |
-| `nineflow_variant` | 读取某个镜头 × 厂商的提示词、参考图与连续性快照 | 否（仅在内存编译） |
-| `nineflow_audit` | 按 `job_id` 运行 13 项证据链审计 | 否 |
-| `nineflow_jobs` | 列出任务账本，可按镜头/厂商过滤 | 否 |
-| `nineflow_build` | 编译 Context Pack；默认只预览，`write=true` 才全量写入 | 显式调用时 |
-| `nineflow_contact_sheet` | 从任务视频生成 3×3 抽帧九宫格 | 写入 `outputs/` |
+| `cinelock_status` | 当前修订、镜头、厂商、Pack 状态与校验摘要 | 否 |
+| `cinelock_validate` | 校验角色卡、参考图哈希、时间线与厂商配置 | 否 |
+| `cinelock_variant` | 读取某个镜头 × 厂商的提示词、参考图与连续性快照 | 否（仅在内存编译） |
+| `cinelock_audit` | 按 `job_id` 运行 13 项证据链审计 | 否 |
+| `cinelock_jobs` | 列出任务账本，可按镜头/厂商过滤 | 否 |
+| `cinelock_build` | 编译 Context Pack；默认只预览，`write=true` 才全量写入 | 显式调用时 |
+| `cinelock_contact_sheet` | 从任务视频生成 3×3 抽帧九宫格 | 写入 `outputs/` |
 
 配置完成后，可以直接在客户端里说：
 
-- “用 nineflow_status 看一下当前修订和 5 个镜头。”
+- “用 cinelock_status 看一下当前修订和 5 个镜头。”
 - “把 E01-004 × mock 的完整提示词和参考图给我。”
 - “审计 JOB_...，分别告诉我证据链结论和任务状态。”
 
@@ -209,7 +291,7 @@ WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；�
 
 - 只使用 stdio，不监听端口，不发起网络请求；
 - 项目目录在进程启动时固定，工具不能遍历到任意路径；
-- `nineflow_build` 默认只预览，写共享包必须显式传 `write=true`，且不允许和 `provider_id` 同时使用；
+- `cinelock_build` 默认只预览，写共享包必须显式传 `write=true`，且不允许和 `provider_id` 同时使用；
 - MCP 客户端拥有当前用户的本地文件权限，只连接可信客户端；
 - Quota-Flow 的登录凭据不会通过 MCP 暴露；MCP 工具不执行真实厂商调用。
 
@@ -219,8 +301,8 @@ WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；�
 
 ```text
 studio.py                     CLI 入口
-nineflow/
-  context.py                  加载四个事实源，计算 context_revision
+cinelock/
+  context.py                  加载事实源，计算 context_revision
   validate.py                 结构、引用、连续性、厂商能力校验
   continuity.py               按镜头顺序应用 state_delta，生成快照
   compiler.py                 参考图选择、模式选择、提示词与时长适配
@@ -241,12 +323,12 @@ config/
   providers.json              厂商能力矩阵与 Quota-Flow CLI 映射
   prompt_maps.json            风格、景别、运镜等词表
 web/                          无外部依赖的看板前端
-projects/nine-inning-bottom/
+examples/nine-inning-bottom/  官方演示关卡
   project.json                项目/风格/画幅/默认策略
   characters.json             角色卡
   reference_bank.json         参考图库（本地路径 + 可选 public_url）
   timeline.json               场景、镜头、连续性 state_delta
-  refs/                       演示用占位参考图
+  refs/                       原创几何占位参考图
   context/                    构建产物（含预构建的 Context Pack）
   jobs/ outputs/ exports/     任务账本、视频、交接包（运行时生成）
 tests/                        unittest 测试
@@ -267,7 +349,7 @@ tests/                        unittest 测试
 - 厂商能力矩阵（含项目覆盖项）；
 - 提示词词表；
 - 每个参考图的实际文件哈希；
-- 编译引擎指纹：NineFlow 版本 + `context.py` / `compiler.py` / `continuity.py` 的源码 SHA-256。
+- 编译引擎指纹：CineLock 版本 + `context.py` / `compiler.py` / `continuity.py` 的源码 SHA-256。
 
 因此：
 
@@ -341,11 +423,11 @@ python studio.py build
 
 ### 连续性存证与审计
 
-任务创建时，NineFlow 会把当时的上下文固化成一份可重算的存证：
+任务创建时，CineLock 会把当时的上下文固化成一份可重算的存证：
 
 - `provenance.source_hashes`：项目、角色卡、参考图库、时间线、厂商矩阵、提示词词表、每个参考图文件哈希与引擎指纹；
 - `provenance.context_snapshot` 与 `context_snapshot_sha256`：这一镜编译时使用的服装、伤情、道具、表情与场景快照；
-- `provenance.engine`：NineFlow 版本与 `context.py` / `compiler.py` / `continuity.py` 的源码哈希；
+- `provenance.engine`：CineLock 版本与 `context.py` / `compiler.py` / `continuity.py` 的源码哈希；
 - `projection`：厂商 `max_refs`、实际进入的参考图数量、被截断的参考图；
 - `outputs`：每个本地产物的路径、字节数与 SHA-256。
 
@@ -366,22 +448,6 @@ python studio.py build
 | 11 | 参考图投影 | 厂商上限截断了哪些参考图，各模型实际看到的输入是否相等 |
 | 12 | 当前修订 | 这是当前任务，还是基于历史修订 |
 | 13 | Context Pack | 包是否与当前修订一致，能否用于重编译比对 |
-
-一个全部通过的任务输出如下（节选）：
-
-```text
-连续性审计 · JOB_...
-E01-001 × handoff · 适配器 handoff · 修订 3363f8fde6e7 · 当前 3363f8fde6e7
-证据链 通过 · 任务 成功 · 上下文 当前修订
-证据链结论 通过 · 通过 13 · 警告 0 · 失败 0 · 跳过 0
-
-[通过] 修订锁
-       存证 source_hashes 与任务修订一致 · 3363f8fde6e7
-[通过] 状态机重放
-       按时间线重放 state_delta，服装、伤情、道具、表情与场景逐字段一致。
-[通过] 同修订重编译
-       同一修订重新编译得到相同的 variant_sha256、prompt_sha256 与连续性快照。
-```
 
 审计把两件事拆开报告：
 
@@ -458,13 +524,13 @@ Quota-Flow CLI 本身不允许传时长，因此时长只影响提示词、计�
 D:\nvm\nodejs\quota-flow.cmd
 ```
 
-NineFlow 会依次查找：
+CineLock 会依次查找：
 
 1. `QUOTA_FLOW_CLI` 指定的路径；
 2. `PATH` 中的 `quota-flow` / `quota-flow.cmd`；
 3. Windows 常见的 nvm / `%APPDATA%\npm` / `Program Files\nodejs` 全局入口。
 
-找到 npm 的 `.cmd` 后，如果同目录有 `node.exe` 和 `node_modules/@quota-flow/cli/dist/cli.cjs`，NineFlow 会直接用自带 Node 执行 JS 入口，绕开 PATH 里的默认 Node 14。也可以显式指定：
+找到 npm 的 `.cmd` 后，如果同目录有 `node.exe` 和 `node_modules/@quota-flow/cli/dist/cli.cjs`，CineLock 会直接用自带 Node 执行 JS 入口，绕开 PATH 里的默认 Node 14。也可以显式指定：
 
 ```bash
 set QUOTA_FLOW_CLI=D:\nvm\nodejs\quota-flow.cmd
@@ -483,14 +549,14 @@ python studio.py status
 
 ### 2. 登录凭据
 
-CLI 的 `fetch` 引擎从 `~/.quota-flow/` 读取登录态，NineFlow 不读取、不保存、不上传这些文件：
+CLI 的 `fetch` 引擎从 `~/.quota-flow/` 读取登录态，CineLock 不读取、不保存、不上传这些文件：
 
 - `qwen-auth.json`：至少包含 `cookie`、`deviceId`、`sessionId`；可选 `reqId`。
 - `yuanbao-auth.json`：至少包含 `cookie`、`agentId`、`conversationId`。
 
 `--engine browser` 在当前 CLI 中只实现了 yuanbao（会打开真实 Edge），qwenwan 仍走静态凭据。登录态由用户自己完成；不要把 Cookie / API Key 写进本仓库。
 
-**注意（CLI 0.1.0 行为）**：缺少上述 JSON 时，`quota-flow generate` 不会报错退出，而是返回 `ok: true` 的 dry-run 结果，并且可能照样扣减本地额度。NineFlow 会识别 `traceId` / `raw.warning` 中的 dry-run 标记，把任务记为 `dry_run` 而不是 `succeeded`，同时提示“未生成真实视频”和“可能已扣减额度”。可用 `quota-flow refresh` 重置当日演示额度（`totalSuccessful` 等累计值不会清零）。
+**注意（CLI 0.1.0 行为）**：缺少上述 JSON 时，`quota-flow generate` 不会报错退出，而是返回 `ok: true` 的 dry-run 结果，并且可能照样扣减本地额度。CineLock 会识别 `traceId` / `raw.warning` 中的 dry-run 标记，把任务记为 `dry_run` 而不是 `succeeded`，同时提示“未生成真实视频”和“可能已扣减额度”。可用 `quota-flow refresh` 重置当日演示额度（`totalSuccessful` 等累计值不会清零）。
 
 ### 3. 给参考图补公网 URL
 
@@ -500,7 +566,7 @@ Quota-Flow 只接受公网 `https` 图片。编辑 `reference_bank.json` 每个 
 {
   "asset_id": "REF_LINYE_FRONT_V01",
   "path": "refs/characters/linye/linye_front_v01.png",
-  "public_url": "https://your-cdn.example/nineflow/linye_front_v01.png"
+  "public_url": "https://your-cdn.example/cinelock/linye_front_v01.png"
 }
 ```
 
@@ -531,16 +597,16 @@ set QUOTA_FLOW_CLI=D:\nvm\nodejs\quota-flow.cmd
 set QUOTA_FLOW_NODE=D:\nvm\nodejs\node.exe
 
 # 可选 fetch / browser；CLI 0.1.0 的 browser 只实现了 yuanbao
-set NINEFLOW_QF_ENGINE=fetch
+set CINELOCK_QF_ENGINE=fetch
 
 # 建议保持 0：非 0 时 Quota-Flow 可能切换到其他厂商，破坏逐厂商对比
-set NINEFLOW_QF_FALLBACK_ROUNDS=0
+set CINELOCK_QF_FALLBACK_ROUNDS=0
 
 # 默认拒绝“请求 A、实际用 B”的静默替换；设为 1 才接受
-set NINEFLOW_QF_ALLOW_PROVIDER_SWITCH=0
+set CINELOCK_QF_ALLOW_PROVIDER_SWITCH=0
 
 # 单次执行超时，默认 1800 秒
-set NINEFLOW_QF_TIMEOUT_SEC=1800
+set CINELOCK_QF_TIMEOUT_SEC=1800
 ```
 
 ### 5. 任务账本
@@ -554,22 +620,48 @@ set NINEFLOW_QF_TIMEOUT_SEC=1800
 
 ---
 
-## 替换占位内容
+## 把演示关卡变成你自己的项目
 
-1. **角色**：编辑 `characters.json`，补 `descriptor`、`identity_invariants`、服装状态、表情参考和负向词。
+《九局下半》刻意做成了一个**可复制的模板**。Fork 之后，不需要改引擎代码：
+
+```bash
+cp -r examples/nine-inning-bottom projects/my-story
+python studio.py --project-dir projects/my-story validate
+python studio.py --project-dir projects/my-story build
+python studio.py --project-dir projects/my-story serve
+```
+
+然后按顺序替换：
+
+1. **角色**：编辑 `characters.json`，补 `descriptor`、身份不变量、服装状态、表情参考和负向词。
 2. **参考图**：把真实图片放进 `refs/`，更新 `reference_bank.json` 的 `asset_id`、`path`、`status`；`build` 会自动计算实际哈希并写入包。
 3. **时间线**：编辑 `timeline.json` 的场景、镜头、台词、音效和 `state_delta`。状态变化只写在这里。
 4. **厂商**：按真实能力修改 `config/providers.json`；项目级覆盖写到 `project.json` 的 `provider_overrides`。
-5. **重建**：`python studio.py validate && python studio.py build`。旧包会自动失效，看板显示“上下文已变化”。
+5. **重建**：`validate && build`。旧包会自动失效，看板显示“上下文已变化”。
 
 仓库里保留了一份预构建的 `context/context_pack.json` 方便直接查看看板；修改任何事实源后都必须重新构建。
+
+### 招募社区一起把它做完
+
+《九局下半》的下一阶段不是“再写一个演示”，而是把 5 个镜头真正生成出来，并把输出侧连续性核验补上。欢迎从这些方向参与：
+
+- 用 handoff 包在你熟悉的模型上生成 E01-001 ~ E01-005，回传任务记录与失败样本；
+- 替换占位参考图，贡献有明确授权的角色/场景资产；
+- 增加输出侧审片：人脸、服装、伤情、道具的视觉核验；
+- 接入新的厂商或 MCP 客户端；
+- 扩展时间线：更多角色、更多场景、更多状态分支。
+
+完整的任务拆解、验收标准、回报格式和可直接粘贴的 Issue 草稿见 [`docs/community-tasks.md`](docs/community-tasks.md)。镜06（顿棍立威）与镜07（特训蒙太奇）目前**只是提案**，时间线里还不存在，也没有编译好的提示词——需要先设计 `state_delta` 再 `build`。
+
+提交前请确认：不包含 Cookie / API Key / 登录态；素材有合法授权；不要把 mock 占位视频标成真实成片。
 
 ---
 
 ## 测试
 
 ```bash
-python -m unittest discover -s tests -v
+cd tests
+python -m unittest discover -s . -t . -v
 ```
 
 覆盖：
@@ -595,8 +687,8 @@ mock 出片与九宫格测试在缺少 ffmpeg / ffprobe / Pillow 时自动跳过
 - **一致性是概率性的**：同一套参考图与快照能显著降低漂移，但不能保证每个模型像素级一致。
 - 单图厂商丢失几何、表情、伤情参考，只剩身份锚点与文字描述，是最容易漂移的路径。
 - 已安装的 Quota-Flow CLI 0.1.0 只注册 `qwenwan` / `yuanbao`，两家都只有单图首帧；多参考厂商仍需 handoff。
-- CLI 在缺少登录态时会返回 dry-run，并可能扣减本地额度；NineFlow 只把它记为 `dry_run`，不会当作成功视频。
-- CLI 对未注册的 `--provider` 会静默回退到千问；NineFlow 默认拒绝这种厂商不一致，避免对比结果串台。
+- CLI 在缺少登录态时会返回 dry-run，并可能扣减本地额度；CineLock 只把它记为 `dry_run`，不会当作成功视频。
+- CLI 对未注册的 `--provider` 会静默回退到千问；CineLock 默认拒绝这种厂商不一致，避免对比结果串台。
 - Quota-Flow CLI 没有时长与 seed 参数；实际时长、运动细节和随机性由厂商决定。
 - 首尾帧模式只有在时间线提供 `keyframes.first` / `keyframes.last` 时才会启用；占位数据没有关键帧。
 - 当前没有自动人脸评分、镜头完成度判断、音频/口型、自动重试与人工审片队列。
@@ -606,10 +698,32 @@ mock 出片与九宫格测试在缺少 ffmpeg / ffprobe / Pillow 时自动跳过
 - 审计不是密码学签名，只防漂移与朴素篡改；拥有任务 JSON 与磁盘写权限的人可以同时改写存证与产物。
 - 看板是单机工具，没有多用户认证，不应暴露到局域网或公网。
 
+---
+
+## 命名与版本
+
+- `CineLock` 是 0.2.0 起的正式名字；`NineFlow` 保留为 0.1.x 的开发代号和历史 tag。
+- Python 包名、CLI、MCP server 与工具名均已统一为 `cinelock` / `cinelock_*`。
+- 旧仓库 URL 会由 GitHub 重定向；如果你在脚本里写死了 `bbo777/nineflow`，建议改成 `bbo777/cinelock`。
+
+---
+
 ## 安全与合规
 
-- 看板默认绑定 `127.0.0.1`，校验 Host/Origin，POST 必须带 `X-NineFlow: studio`，文件只能读 `refs/`、`outputs/`、`exports/`，并限制路径穿越。
+- 看板默认绑定 `127.0.0.1`，校验 Host/Origin，POST 必须带 `X-CineLock: studio`，文件只能读 `refs/`、`outputs/`、`exports/`，并限制路径穿越。
 - Context Pack 与 handoff 包只包含提示词、参考图副本和元数据，不包含 Cookie、API Key 或登录态。
 - 公网参考图需要你自行上传并确认访问权限；上传前请检查素材版权、肖像授权与隐私内容。
 - 真实生成时请遵守各厂商服务条款与配额规则。本项目只做连续性编排、调度与审计，不绕过配额、不提供账号共享或风控规避。
 - 角色、剧本、参考图的权利与授权由使用者负责。
+
+---
+
+## 版权与免责声明
+
+示例项目《九局下半》中的人物、剧本与参考图均为原创占位内容，仅用于展示本引擎的复杂状态机能力，请勿用于商业用途。当前仓库不包含任何第三方 IP 素材。使用者应确保自己上传的素材拥有合法版权，并自行承担因素材权利瑕疵产生的责任。
+
+CineLock 只做输入侧连续性治理与证据链审计，不对任何模型生成内容的真实性、合法性或画面质量作保证。
+
+---
+
+如果这个项目对你有帮助，欢迎 Star、提交 Issue，或者直接 fork 一份，把《九局下半》的 5 个镜头真正生成出来。

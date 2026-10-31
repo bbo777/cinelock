@@ -8,10 +8,10 @@ import unittest
 from unittest.mock import patch
 
 from support import TempProjectCase
-from nineflow.adapters import quota_flow
-from nineflow.context_pack import get_variant
-from nineflow.dispatch import DispatchError, execute, execute_many
-from nineflow.jobs import ledger_path, list_jobs, load_job
+from cinelock.adapters import quota_flow
+from cinelock.context_pack import get_variant
+from cinelock.dispatch import DispatchError, execute, execute_many
+from cinelock.jobs import ledger_path, list_jobs, load_job
 
 try:
     import PIL  # noqa: F401
@@ -147,7 +147,7 @@ class DispatchTest(TempProjectCase):
             },
         }
         script = self._fake_cli(payload)
-        with patch.dict(os.environ, {"NINEFLOW_QF_ALLOW_PROVIDER_SWITCH": ""}):
+        with patch.dict(os.environ, {"CINELOCK_QF_ALLOW_PROVIDER_SWITCH": ""}):
             with patch.object(quota_flow, "_resolve_cli", return_value=([sys.executable, script], [])):
                 outcome = quota_flow.run(self.ctx, self._ready_variant("yuanbao"), "JOB_TEST_SWAP")
 
@@ -156,7 +156,7 @@ class DispatchTest(TempProjectCase):
         self.assertEqual({item["kind"] for item in outcome.outputs}, {"quota_flow_json"})
 
     def test_stale_pack_is_rejected(self) -> None:
-        from nineflow.util import read_json, write_json
+        from cinelock.util import read_json, write_json
 
         project = read_json(self.project_dir / "project.json")
         project["title"] = project["title"] + " · changed"

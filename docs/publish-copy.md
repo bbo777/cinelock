@@ -4,7 +4,7 @@
 
 - 中文：[`hash-lock-and-state-machine.md`](hash-lock-and-state-machine.md)
 - 英文：[`hash-lock-and-state-machine.en.md`](hash-lock-and-state-machine.en.md)
-- 仓库：https://github.com/bbo777/nineflow
+- 仓库：https://github.com/bbo777/cinelock
 
 > 截至 2026-10-31，掘金、V2EX、X、Hacker News 在当前浏览器中均未登录。以下文案已按平台限制准备好，登录后可直接粘贴发布。
 
@@ -18,7 +18,7 @@
 
 **摘要**
 
-5 个镜头、4 个模型、20 个变体共享同一份上下文修订。本文拆解哈希锁、连续性状态机、确定性编译、13 项分层审计、MCP Server 接入，以及 ffprobe 与九宫格如何把“看起来对”变成可检查的产物。
+1 个原创角色、2 个场景、5 个镜头、4 个模型、20 个变体共享同一份上下文修订。本文拆解哈希锁、连续性状态机、确定性编译、13 项分层审计、MCP Server 接入，以及 ffprobe 与九宫格如何把“看起来对”变成可检查的产物。演示项目仍在逐镜生成中，当前没有成片。
 
 **分类**
 
@@ -33,7 +33,7 @@ MCP、AI 视频、AIGC、Python、开源
 直接使用 [`hash-lock-and-state-machine.md`](hash-lock-and-state-machine.md) 全文。发布前把文末仓库链接保留为：
 
 ```text
-https://github.com/bbo777/nineflow
+https://github.com/bbo777/cinelock
 ```
 
 ---
@@ -61,9 +61,9 @@ https://github.com/bbo777/nineflow
 5. 产物校验：ffprobe 检查时长/分辨率/编码，ffmpeg 生成 3×3 九宫格做人工快速对比。
 6. MCP 接入：内置零依赖 MCP stdio Server，Claude Desktop / WorkBuddy 加 9 行 JSON 就能查修订、取编译结果、跑审计，不用重新实现任何语义。
 
-演示项目是 5 镜头 × 4 模型 = 20 个变体，共享一个修订，62 个测试，最近一次 mock 任务 13/13 通过。默认先跑 mock/handoff，不消耗真实配额。
+演示项目是 1 个原创角色、2 个场景、5 镜头 × 4 模型 = 20 个变体，共享一个修订，62 个测试，最近一次 mock 任务 13/13 通过。默认先跑 mock/handoff，不消耗真实配额。项目仍是 WIP：底层引擎和审计闭环已经完成，5 个镜头正在逐镜生成，当前没有成片。
 
-代码和完整演示：https://github.com/bbo777/nineflow
+代码和完整演示：https://github.com/bbo777/cinelock
 
 想听听大家在实际多模型工作流里遇到的穿帮案例，尤其是“用了同一张参考图还是不像”的那种。
 
@@ -75,7 +75,7 @@ https://github.com/bbo777/nineflow
 
 1/
 
-Five shots. Four AI video providers. Twenty variants. One context revision: 3363f8fde6e7.
+One original character. Two scenes. Five shots. Four AI video providers. Twenty variants. One context revision: 9bb2cfb6449f.
 
 The hard part isn't generating clips. It's proving every model saw the same character, the same state, and the same instructions. 🧵
 
@@ -107,7 +107,7 @@ A failed provider is not an evidence failure. A stale context is not a pass.
 
 5/
 
-NineFlow also ships a zero-dependency MCP stdio server. Claude Desktop or WorkBuddy can query the revision, fetch a compiled variant, run the 13-check audit, or build a preview — no separate API, no reimplementation.
+CineLock also ships a zero-dependency MCP stdio server. Claude Desktop or WorkBuddy can query the revision, fetch a compiled variant, run the 13-check audit, or build a preview — no separate API, no reimplementation.
 
 9 lines of JSON.
 
@@ -117,7 +117,9 @@ ffprobe validates downloads. ffmpeg builds a 3×3 contact sheet for human review
 
 Result: 62 tests, 20 variants, 13/13 checks pass on the demo. Mock/handoff runs cost zero quota.
 
-Code: https://github.com/bbo777/nineflow
+This is still WIP: the continuity engine and audit loop are done; the five shots are being generated now. No finished film yet — and the README says so.
+
+Code: https://github.com/bbo777/cinelock
 
 ---
 
@@ -129,17 +131,17 @@ Show HN
 
 **Title**
 
-Show HN: NineFlow – MCP server for hash-locked AI video continuity
+Show HN: CineLock – MCP server for hash-locked AI video continuity
 
 **URL**
 
-https://github.com/bbo777/nineflow
+https://github.com/bbo777/cinelock
 
 **First comment（作者自述）**
 
-I built this after a 5-shot short turned into four visually different films when I switched providers between shots. Prompt engineering didn't help, because each model only sees the context you hand it at generation time.
+I built this after watching the same 5-shot sequence drift across four providers. Prompt engineering didn't help, because each model only sees the context you hand it at generation time.
 
-NineFlow treats continuity as an engineering constraint:
+CineLock treats continuity as an engineering constraint:
 
 - A context revision is a SHA-256 over character cards, timeline, provider matrix, actual reference-image bytes, and a compiler fingerprint. Stale revisions are rejected before execution.
 - A state machine replays per-shot state deltas (wardrobe, injuries, props), and the compiler consumes the resulting snapshot instead of the raw character card.
@@ -147,7 +149,7 @@ NineFlow treats continuity as an engineering constraint:
 - ffprobe validates downloaded media; ffmpeg produces a 3×3 contact sheet for human review.
 - A zero-dependency MCP stdio server exposes status, variant compilation, audit, job listing, preview/full build, and contact sheets to Claude Desktop or WorkBuddy.
 
-The demo is 5 shots × 4 providers = 20 variants with one revision. 62 tests pass. The mock/handoff path costs no quota, so you can exercise the full loop before connecting a real provider.
+The demo is 1 original character, 2 scenes, 5 shots × 4 providers = 20 variants with one revision. 62 tests pass. The mock/handoff path costs no quota, so you can exercise the full loop before connecting a real provider. It is explicitly WIP: the engine, hash lock, state machine, and audit loop are complete; the five shots are still being generated, and there is no finished film.
 
 It does not make models deterministic or judge visual quality. It bounds the randomness and makes every output explainable. I'd especially welcome feedback on the audit model and on continuity data formats for real productions.
 
@@ -156,6 +158,7 @@ It does not make models deterministic or judge visual quality. It bounds the ran
 ## 发布检查清单
 
 - [x] GitHub topics：`mcp` / `mcp-server` / `ai-video` / `aigc` / `continuity` / `claude-desktop` / `workbuddy` / `python`
+- [ ] GitHub 仓库改名 `nineflow` → `cinelock` 并验证旧 URL 重定向（HTTPS 通道当前被重置，待网络恢复）
 - [ ] 掘金：登录 → 写文章 → 粘贴 Markdown → 选分类/标签 → 发布 → 记录链接
 - [ ] V2EX：登录 → 分享创造 → 粘贴标题/正文 → 发布 → 记录链接
 - [ ] X：登录 → 按 6 条 Thread 发布 → 记录首条链接

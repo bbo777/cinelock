@@ -4,9 +4,9 @@ import copy
 import unittest
 
 from support import TempProjectCase
-from nineflow.audit import audit_job
-from nineflow.dispatch import execute
-from nineflow.util import resolve_within
+from cinelock.audit import audit_job
+from cinelock.dispatch import execute
+from cinelock.util import resolve_within
 
 
 class AuditTest(TempProjectCase):
@@ -96,7 +96,7 @@ class AuditTest(TempProjectCase):
 
         project = self.context().project
         project["title"] = project["title"] + " · audit drift"
-        from nineflow.util import write_json
+        from cinelock.util import write_json
 
         write_json(self.project_dir / "project.json", project)
         ctx = self.context()

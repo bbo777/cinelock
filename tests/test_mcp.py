@@ -7,8 +7,8 @@ import sys
 import unittest
 
 from support import CONFIG, ROOT, TempProjectCase
-from nineflow.context_pack import load_pack, pack_is_current
-from nineflow.mcp_server import McpServer
+from cinelock.context_pack import load_pack, pack_is_current
+from cinelock.mcp_server import McpServer
 
 
 class McpServerTest(TempProjectCase):
@@ -43,27 +43,27 @@ class McpServerTest(TempProjectCase):
         )
         result = response["result"]
         self.assertEqual(result["protocolVersion"], "2025-06-18")
-        self.assertEqual(result["serverInfo"]["name"], "nineflow")
+        self.assertEqual(result["serverInfo"]["name"], "cinelock")
 
         listed = server.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         tools = listed["result"]["tools"]
         self.assertEqual(
             {tool["name"] for tool in tools},
             {
-                "nineflow_status",
-                "nineflow_validate",
-                "nineflow_variant",
-                "nineflow_audit",
-                "nineflow_jobs",
-                "nineflow_build",
-                "nineflow_contact_sheet",
+                "cinelock_status",
+                "cinelock_validate",
+                "cinelock_variant",
+                "cinelock_audit",
+                "cinelock_jobs",
+                "cinelock_build",
+                "cinelock_contact_sheet",
             },
         )
         for tool in tools:
             self.assertEqual(tool["inputSchema"]["type"], "object")
 
     def test_status_and_variant_are_read_only(self) -> None:
-        status = self.payload(self.call("nineflow_status"))
+        status = self.payload(self.call("cinelock_status"))
         self.assertEqual(status["context_revision"], self.ctx.context_revision())
         self.assertEqual(status["shot_count"], len(self.ctx.shots()))
         self.assertEqual(status["provider_count"], len(self.ctx.provider_order()))
@@ -71,7 +71,7 @@ class McpServerTest(TempProjectCase):
 
         variant = self.payload(
             self.call(
-                "nineflow_variant",
+                "cinelock_variant",
                 {"shot_id": "E01-001", "provider_id": "mock", "include_prompt": False},
             )
         )
@@ -82,7 +82,7 @@ class McpServerTest(TempProjectCase):
 
         with_prompt = self.payload(
             self.call(
-                "nineflow_variant",
+                "cinelock_variant",
                 {"shot_id": "E01-001", "provider_id": "mock"},
             )
         )
@@ -91,33 +91,33 @@ class McpServerTest(TempProjectCase):
         self.assertFalse((self.project_dir / "context" / "context_pack.json").exists())
 
     def test_build_preview_does_not_write_shared_pack(self) -> None:
-        preview = self.payload(self.call("nineflow_build"))
+        preview = self.payload(self.call("cinelock_build"))
         self.assertFalse(preview["written"])
         self.assertIsNone(preview["pack_path"])
         self.assertFalse((self.project_dir / "context" / "context_pack.json").exists())
 
-        written = self.payload(self.call("nineflow_build", {"write": True}))
+        written = self.payload(self.call("cinelock_build", {"write": True}))
         self.assertTrue(written["written"])
         self.assertTrue((self.project_dir / "context" / "context_pack.json").is_file())
         self.assertTrue(pack_is_current(self.context(), load_pack(self.context())))
 
-        conflict = self.call("nineflow_build", {"write": True, "provider_id": "mock"})
+        conflict = self.call("cinelock_build", {"write": True, "provider_id": "mock"})
         self.assertTrue(conflict["isError"])
 
     def test_tool_errors_are_returned_as_results(self) -> None:
         missing = self.call(
-            "nineflow_variant", {"shot_id": "NOPE", "provider_id": "mock"}
+            "cinelock_variant", {"shot_id": "NOPE", "provider_id": "mock"}
         )
         self.assertTrue(missing["isError"])
 
-        unknown = self.call("nineflow_nope")
+        unknown = self.call("cinelock_nope")
         self.assertTrue(unknown["isError"])
 
-        audit = self.call("nineflow_audit", {"job_id": "JOB_NOPE"})
+        audit = self.call("cinelock_audit", {"job_id": "JOB_NOPE"})
         self.assertTrue(audit["isError"])
 
     def test_audit_and_jobs_tools_use_real_ledger(self) -> None:
-        self.payload(self.call("nineflow_build", {"write": True}))
+        self.payload(self.call("cinelock_build", {"write": True}))
         base = [
             sys.executable,
             str(ROOT / "studio.py"),
@@ -138,13 +138,13 @@ class McpServerTest(TempProjectCase):
         self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", errors="replace"))
         job_id = json.loads(proc.stdout.decode("utf-8"))[0]["job_id"]
 
-        report = self.payload(self.call("nineflow_audit", {"job_id": job_id}))
+        report = self.payload(self.call("cinelock_audit", {"job_id": job_id}))
         self.assertTrue(report["ok"])
         self.assertEqual(report["job_status"], "dry_run")
         self.assertTrue(report["dry_run"])
         self.assertEqual(len(report["checks"]), 13)
 
-        jobs = self.payload(self.call("nineflow_jobs", {"limit": 5}))
+        jobs = self.payload(self.call("cinelock_jobs", {"limit": 5}))
         self.assertEqual(jobs["count"], 1)
         self.assertEqual(jobs["jobs"][0]["job_id"], job_id)
 
@@ -165,7 +165,7 @@ class McpServerTest(TempProjectCase):
                 "jsonrpc": "2.0",
                 "id": 3,
                 "method": "tools/call",
-                "params": {"name": "nineflow_status", "arguments": {}},
+                "params": {"name": "cinelock_status", "arguments": {}},
             },
         ]
         payload = "\n".join(json.dumps(item, ensure_ascii=False) for item in requests) + "\n"

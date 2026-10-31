@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0",
+  "job_id": "JOB_20261031T134503Z_E01-004_handoff_adb8f9",
+  "project_id": "nine-inning-bottom",
+  "shot_id": "E01-004",
+  "provider_id": "handoff",
+  "mode": "multi_ref",
+  "mode_label": "多参考图",
+  "duration_sec": 5,
+  "aspect_ratio": "16:9",
+  "resolution": "1920x1080",
+  "fps": 24,
+  "seed": 1199982073,
+  "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
+  "short_revision": "9bb2cfb6449f",
+  "prompt_sha256": "774c474761d35f63f298e7d52889e321352f9bd85b51df789d13020097e659b5",
+  "negative_sha256": "00aa0306d91f63ddccd1e04d10f70d00a24b7c89c665a7d6a2d3d8a7b7dd91d8",
+  "prompt_file": "prompt.txt",
+  "negative_file": "negative.txt",
+  "references": [
+    {
+      "order": 1,
+      "asset_id": "REF_LINYE_FRONT_V01",
+      "role": "identity",
+      "label": "Lin Ye — identity anchor (front view)",
+      "file": "refs/01_REF_LINYE_FRONT_V01.png",
+      "source_path": "refs/characters/linye/linye_front_v01.png",
+      "sha256": "e31a9a93e9f636cc807e200ef637254282c5e6b7a9cf99b2d2fad8061746562d",
+      "public_url": null
+    },
+    {
+      "order": 2,
+      "asset_id": "REF_LINYE_3Q_V01",
+      "role": "geometry",
+      "label": "Lin Ye — geometry reference",
+      "file": "refs/02_REF_LINYE_3Q_V01.png",
+      "source_path": "refs/characters/linye/linye_3q_v01.png",
+      "sha256": "0c1b256d45833af6a7f4dcd09ab81734758da13086672386cefd4e5286e1df53",
+      "public_url": null
+    },
+    {
+      "order": 3,
+      "asset_id": "REF_LINYE_EXPR_PAIN_V01",
+      "role": "expression",
+      "label": "Lin Ye — expression: pain",
+      "file": "refs/03_REF_LINYE_EXPR_PAIN_V01.png",
+      "source_path": "refs/characters/linye/linye_expr_pain_v01.png",
+      "sha256": "c4e42e97d9a89164b010003e6f0ad0f0667d82f7b52ed8344b0bc0cbe5e07d03",
+      "public_url": null
+    },
+    {
+      "order": 4,
+      "asset_id": "REF_LINYE_INJURED_V01",
+      "role": "injury",
+      "label": "Lin Ye — injury state (home_injured)",
+      "file": "refs/04_REF_LINYE_INJURED_V01.png",
+      "source_path": "refs/characters/linye/linye_injured_v01.png",
+      "sha256": "b9ec09d0ad8b03b55b3de5aad75a505e654d7b6d0f2a1753649bca9bff4104d1",
+      "public_url": null
+    },
+    {
+      "order": 5,
+      "asset_id": "REF_SC02_BATTERBOX_DUSK_V01",
+      "role": "scene",
+      "label": "Scene — SC02_BATTERBOX_DUSK (dusk)",
+      "file": "refs/05_REF_SC02_BATTERBOX_DUSK_V01.png",
+      "source_path": "refs/scenes/sc02_batterbox_dusk_v01.png",
+      "sha256": "a1a8c9c2cc7d1e6dac245e3a5560401155eaa4dda1fc8c81730ce23b6c6469f4",
+      "public_url": null
+    }
+  ],
+  "created_at": "2026-10-31T13:45:03Z"
+}

@@ -10,7 +10,7 @@ import urllib.request
 from urllib.parse import quote
 
 from support import CONFIG, TempProjectCase
-from nineflow.dashboard import DashboardServer
+from cinelock.dashboard import DashboardServer
 
 
 class DashboardTest(TempProjectCase):
@@ -63,7 +63,7 @@ class DashboardTest(TempProjectCase):
         status, _, body = self.request(
             "/api/build",
             method="POST",
-            headers={"X-NineFlow": "studio"},
+            headers={"X-CineLock": "studio"},
             payload={},
         )
         self.assertEqual(status, 200)
@@ -75,7 +75,7 @@ class DashboardTest(TempProjectCase):
         status, _, body = self.request(
             "/api/run",
             method="POST",
-            headers={"X-NineFlow": "studio"},
+            headers={"X-CineLock": "studio"},
             payload={"shot_id": "E01-001", "provider_id": "mock", "dry_run": True},
         )
         self.assertEqual(status, 200)
@@ -92,7 +92,7 @@ class DashboardTest(TempProjectCase):
         status, _, body = self.request(
             "/api/run",
             method="POST",
-            headers={"X-NineFlow": "studio"},
+            headers={"X-CineLock": "studio"},
             payload={"shot_id": "E01-001", "provider_id": "mock", "dry_run": True},
         )
         self.assertEqual(status, 200)
@@ -116,7 +116,7 @@ class DashboardTest(TempProjectCase):
         status, _, body = self.request(
             "/api/run",
             method="POST",
-            headers={"X-NineFlow": "studio"},
+            headers={"X-CineLock": "studio"},
             payload={"shot_id": "E01-001", "provider_id": "mock"},
         )
         self.assertEqual(status, 200)
@@ -126,7 +126,7 @@ class DashboardTest(TempProjectCase):
         status, _, body = self.request(
             "/api/contact-sheet",
             method="POST",
-            headers={"X-NineFlow": "studio"},
+            headers={"X-CineLock": "studio"},
             payload={"id": job["job_id"]},
         )
         self.assertEqual(status, 200)
@@ -147,7 +147,7 @@ class DashboardTest(TempProjectCase):
         status, _, body = self.request(
             "/api/run",
             method="POST",
-            headers={"X-NineFlow": "studio"},
+            headers={"X-CineLock": "studio"},
             payload={"shot_id": "E01-001", "provider_id": "mock", "dry_run": True},
         )
         self.assertEqual(status, 200)
@@ -156,7 +156,7 @@ class DashboardTest(TempProjectCase):
         status, _, body = self.request(
             "/api/contact-sheet",
             method="POST",
-            headers={"X-NineFlow": "studio"},
+            headers={"X-CineLock": "studio"},
             payload={"id": job_id},
         )
         self.assertEqual(status, 400)
@@ -166,7 +166,7 @@ class DashboardTest(TempProjectCase):
         status, _, _ = self.request(
             "/api/build",
             method="POST",
-            headers={"X-NineFlow": "studio", "Origin": "http://evil.example"},
+            headers={"X-CineLock": "studio", "Origin": "http://evil.example"},
             payload={},
         )
         self.assertEqual(status, 403)

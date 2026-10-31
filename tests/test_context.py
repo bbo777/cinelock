@@ -3,13 +3,13 @@ from __future__ import annotations
 import unittest
 
 from support import TempProjectCase
-from nineflow.context_pack import build_pack, load_pack, pack_is_current, variant_file
-from nineflow.util import read_json, write_json
+from cinelock.context_pack import build_pack, load_pack, pack_is_current, variant_file
+from cinelock.util import read_json, write_json
 
 
 class ContextRevisionTest(TempProjectCase):
     def test_validation_has_no_errors(self) -> None:
-        from nineflow.validate import validate_context
+        from cinelock.validate import validate_context
 
         result = validate_context(self.ctx)
         self.assertTrue(result.ok, [issue.to_dict() for issue in result.errors])

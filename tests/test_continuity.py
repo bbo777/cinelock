@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from support import TempProjectCase
-from nineflow.continuity import apply_state_delta, build_state_snapshots
+from cinelock.continuity import apply_state_delta, build_state_snapshots
 
 
 class ContinuityTest(TempProjectCase):

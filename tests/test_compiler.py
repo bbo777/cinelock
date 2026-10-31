@@ -3,8 +3,8 @@ from __future__ import annotations
 import unittest
 
 from support import TempProjectCase
-from nineflow.compiler import compile_all
-from nineflow.context_pack import build_pack
+from cinelock.compiler import compile_all
+from cinelock.context_pack import build_pack
 
 
 class CompilerTest(TempProjectCase):

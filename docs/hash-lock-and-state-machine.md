@@ -1,6 +1,7 @@
 # 我是如何用哈希锁和状态机，解决 AI 视频跨模型一致性灾难的
 
-> 5 个镜头、4 个模型、20 个变体，共享同一份上下文修订 `3363f8fde6e7`。
+> 1 个原创角色、2 个场景、5 个镜头、4 个模型、20 个变体，共享同一份上下文修订 `9bb2cfb6449f`。
+> 演示项目仍在逐镜生成中：20 个变体是可执行、可审计的生成说明书，不是成片。
 > 这不是一篇“提示词玄学”，而是一次把一致性变成可验证约束的工程尝试。
 >
 > 关键词：MCP Server · 哈希锁 · 连续性状态机 · 多模型 AI 视频
@@ -27,7 +28,7 @@
 
 我的结论是：**不要试图让模型变得确定，要让模型的输入、状态和证据变得确定。**
 
-NineFlow 就是围绕这句话做的一套本地编排层。它不生成视频，而是确保每个模型在开工前拿到同一套参考图、同一套角色卡、同一条时间线，并且在生成后能证明“它确实用的是这一版”。
+CineLock（原 NineFlow）就是围绕这句话做的一套本地编排层。它不生成视频，而是确保每个模型在开工前拿到同一套参考图、同一套角色卡、同一条时间线，并且在生成后能证明“它确实用的是这一版”。
 
 ---
 
@@ -42,7 +43,7 @@ NineFlow 就是围绕这句话做的一套本地编排层。它不生成视频�
 
 前三个维度决定“看起来连不连”，第四个维度决定“出问题能不能查”。
 
-大多数工作流只做第一维：给模型喂同一张脸。然后祈祷剩下三维不出错。NineFlow 的做法是四维都变成数据结构，再分别加锁。
+大多数工作流只做第一维：给模型喂同一张脸。然后祈祷剩下三维不出错。CineLock 的做法是四维都变成数据结构，再分别加锁。
 
 ---
 
@@ -50,7 +51,7 @@ NineFlow 就是围绕这句话做的一套本地编排层。它不生成视频�
 
 ### 3.1 一次修订，锁住所有输入
 
-NineFlow 的项目目录里有几份人类可读的源文件：项目配置、角色卡、参考图清单、时间线、模型矩阵、提示词映射。它们共同决定一次生成的全部输入。
+CineLock 的项目目录里有几份人类可读的源文件：项目配置、角色卡、参考图清单、时间线、模型矩阵、提示词映射。它们共同决定一次生成的全部输入。
 
 `context_revision` 不是时间戳，也不是自增编号，而是这些输入的 SHA-256：
 
@@ -107,7 +108,7 @@ def normalized_bank(self) -> Dict[str, Any]:
 
 只锁项目文件还不够。如果编译器改了提示词拼接顺序，或者状态机改了字段合并规则，同一份项目输入也可能产出不同的提示词。
 
-所以 `source_hashes` 里还有一项 `engine`：NineFlow 版本号，加上 `context.py`、`compiler.py`、`continuity.py` 三个核心文件的哈希。编译器一变，修订就变；旧任务会被标记为“历史上下文”，而不是被假装成“当前”。
+所以 `source_hashes` 里还有一项 `engine`：CineLock 版本号，加上 `context.py`、`compiler.py`、`continuity.py` 三个核心文件的哈希。编译器一变，修订就变；旧任务会被标记为“历史上下文”，而不是被假装成“当前”。
 
 这不是为了追求形式上的严格，而是为了避免一种更隐蔽的灾难：**代码升级后，旧任务的审计结果突然全部失真，但没人知道为什么。**
 
@@ -237,7 +238,7 @@ def apply_state_delta(state, delta):
 
 增量状态机保留了“变化发生在哪一镜”的信息，所以审计可以按时间线重放，逐字段对比任务记录的快照。只要有一个字段对不上，`continuity_replay` 就会给出具体差异，而不是一句笼统的“状态不一致”。
 
-这也是 NineFlow 和“把角色描述拼进提示词”最本质的区别：**前者有状态，后者只有形容词。**
+这也是 CineLock 和“把角色描述拼进提示词”最本质的区别：**前者有状态，后者只有形容词。**
 
 ---
 
@@ -245,7 +246,7 @@ def apply_state_delta(state, delta):
 
 有了锁和状态，还需要保证编译过程本身不引入随机性。
 
-NineFlow 的编译器做了几件很朴素的事：
+CineLock 的编译器做了几件很朴素的事：
 
 - 按固定顺序拼接：任务 → 风格 → 场景 → 角色身份 → 连续性状态 → 参考图图例 → 运镜/动作 → 负向约束；
 - 参考图池按固定优先级排序：身份锚点优先，其次场景、道具、风格；
@@ -261,8 +262,8 @@ NineFlow 的编译器做了几件很朴素的事：
 在演示项目里，5 个镜头 × 4 个模型 = 20 个变体，累计引用参考图 56 次，全部共享同一个修订：
 
 ```text
-context_revision = 3363f8fde6e766840b637a4baf551e6318637894c4fb57906fc58f558212d318
-short            = 3363f8fde6e7
+context_revision = 9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008
+short            = 9bb2cfb6449f
 variants         = 20
 providers        = mock / qwenwan / yuanbao / handoff
 ```
@@ -374,7 +375,7 @@ tile = 3x3
 
 如果每次查修订、取提示词、跑审计都要人肉敲 CLI，这套约束就只属于我一个人。MCP 把它变成一个任何 Agent 客户端都能调用的工具面。
 
-NineFlow 内置了一个零依赖的 MCP stdio Server，兼容 Python 3.8，不需要安装官方 SDK，也不需要额外的 API Key。它和 CLI 调用的是同一套引擎：同一个修订、同一份状态机、同一组审计检查。
+CineLock 内置了一个零依赖的 MCP stdio Server，兼容 Python 3.8，不需要安装官方 SDK，也不需要额外的 API Key。它和 CLI 调用的是同一套引擎：同一个修订、同一份状态机、同一组审计检查。
 
 ### 10 行配置
 
@@ -383,35 +384,35 @@ NineFlow 内置了一个零依赖的 MCP stdio Server，兼容 Python 3.8，不�
 ```json
 {
   "mcpServers": {
-    "nineflow": {
+    "cinelock": {
       "command": "python",
-      "args": ["C:/path/to/nineflow/studio.py", "--project-dir",
-               "C:/path/to/nineflow/projects/nine-inning-bottom", "mcp"],
+      "args": ["C:/path/to/cinelock/studio.py", "--project-dir",
+               "C:/path/to/cinelock/examples/nine-inning-bottom", "mcp"],
       "env": {"PYTHONIOENCODING": "utf-8"}
     }
   }
 }
 ```
 
-WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；如果文件里已有其他 server，把 `nineflow` 这一项合并进 `mcpServers` 即可。
+WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；如果文件里已有其他 server，把 `cinelock` 这一项合并进 `mcpServers` 即可。
 
-把 `C:/path/to/nineflow` 换成仓库实际路径。若客户端找不到 `python`，把 `"command"` 换成 `where python` 返回的绝对路径。JSON 里的 Windows 路径请使用 `/`，或把 `\` 转义为 `\\`。
+把 `C:/path/to/cinelock` 换成仓库实际路径。若客户端找不到 `python`，把 `"command"` 换成 `where python` 返回的绝对路径。JSON 里的 Windows 路径请使用 `/`，或把 `\` 转义为 `\\`。
 
 ### 七个工具
 
 | 工具 | 作用 | 是否写入 |
 | --- | --- | --- |
-| `nineflow_status` | 当前修订、镜头、厂商、Pack 状态与校验摘要 | 否 |
-| `nineflow_validate` | 校验角色卡、参考图哈希、时间线与厂商配置 | 否 |
-| `nineflow_variant` | 读取某个镜头 × 厂商的提示词、参考图与连续性快照 | 否（仅在内存编译） |
-| `nineflow_audit` | 按 `job_id` 运行 13 项证据链审计 | 否 |
-| `nineflow_jobs` | 列出任务账本，可按镜头/厂商过滤 | 否 |
-| `nineflow_build` | 编译 Context Pack；默认只预览，`write=true` 才全量写入 | 显式调用时 |
-| `nineflow_contact_sheet` | 从任务视频生成 3×3 抽帧九宫格 | 写入 `outputs/` |
+| `cinelock_status` | 当前修订、镜头、厂商、Pack 状态与校验摘要 | 否 |
+| `cinelock_validate` | 校验角色卡、参考图哈希、时间线与厂商配置 | 否 |
+| `cinelock_variant` | 读取某个镜头 × 厂商的提示词、参考图与连续性快照 | 否（仅在内存编译） |
+| `cinelock_audit` | 按 `job_id` 运行 13 项证据链审计 | 否 |
+| `cinelock_jobs` | 列出任务账本，可按镜头/厂商过滤 | 否 |
+| `cinelock_build` | 编译 Context Pack；默认只预览，`write=true` 才全量写入 | 显式调用时 |
+| `cinelock_contact_sheet` | 从任务视频生成 3×3 抽帧九宫格 | 写入 `outputs/` |
 
 配置完成后，可以直接在 Claude Desktop 或 WorkBuddy 里说：
 
-- “用 nineflow_status 看一下当前修订和 5 个镜头。”
+- “用 cinelock_status 看一下当前修订和 5 个镜头。”
 - “把 E01-004 × mock 的完整提示词和参考图给我。”
 - “审计 JOB_...，分别告诉我证据链结论和任务状态。”
 
@@ -420,9 +421,9 @@ WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；�
 MCP 在这里不是一层营销包装，而是这套约束的自然出口：
 
 - **同一个事实源**：MCP 工具不维护第二份配置，读到的就是 CLI 和看板看到的那份 Context Pack；
-- **同一个写边界**：`nineflow_build` 默认只预览，写共享包必须显式 `write=true`，且不允许和单厂商预览同时使用；
+- **同一个写边界**：`cinelock_build` 默认只预览，写共享包必须显式 `write=true`，且不允许和单厂商预览同时使用；
 - **同一个安全模型**：只走 stdio，不监听端口，不发起网络请求；项目目录在进程启动时固定，Quota-Flow 凭据不会通过 MCP 暴露；
-- **同一个审计语义**：`nineflow_audit` 返回的 `verdict` 仍然是证据链、任务状态、上下文新鲜度的分层结论，而不是让 Agent 自己总结一句“看起来没问题”。
+- **同一个审计语义**：`cinelock_audit` 返回的 `verdict` 仍然是证据链、任务状态、上下文新鲜度的分层结论，而不是让 Agent 自己总结一句“看起来没问题”。
 
 对一个开源项目来说，MCP 也是当下最自然的分发接口：用户不需要先学你的 CLI，只要在客户端里加九行 JSON，就能让 Agent 帮他查修订、取提示词、跑审计。约束只有被真正调用，才有价值。
 
@@ -463,7 +464,7 @@ Quota-Flow 是这套编排层依赖的配额与模型调用基础设施。当前
 目前这套系统在演示项目上的状态是：
 
 - 62 个测试全部通过；
-- 5 个镜头、4 个模型、20 个变体共享同一修订；
+- 1 个原创角色、2 个场景、5 个镜头、4 个模型、20 个变体共享同一修订；
 - 20 个变体累计引用参考图 56 次；
 - 最近一次 mock 任务审计 13/13 通过；
 - 真实 handoff 任务审计退出码 0；
@@ -478,6 +479,8 @@ Quota-Flow 是这套编排层依赖的配额与模型调用基础设施。当前
 
 这两者的差别很大。前者是玄学，后者是工程。
 
+需要再次强调：以上结果证明的是**输入侧基础设施**，不是成片质量。《九局下半》的 5 个镜头仍在通过 handoff / Quota-Flow 逐镜生成，当前没有成片；mock 视频只是占位底板。
+
 ---
 
 ## 十一、这套方法不解决什么
@@ -490,7 +493,7 @@ Quota-Flow 是这套编排层依赖的配额与模型调用基础设施。当前
 - **不自动修复穿帮。** 它做的是发现、定位、阻断和留证，不是让模型自己变魔术。
 - **依赖剧本的连续性纪律。** 如果时间线里的 `state_delta` 本身写错了，状态机会非常忠实地把错误传播到每一个模型。垃圾进，垃圾出，只是这次垃圾有哈希。
 
-所以，NineFlow 的定位不是“AI 视频模型”，而是模型之上的**连续性编排与证据层**。它把“共享上下文”从一句口号，变成一组可计算、可拒绝、可审计的约束。
+所以，CineLock 的定位不是“AI 视频模型”，而是模型之上的**连续性编排与证据层**。它把“共享上下文”从一句口号，变成一组可计算、可拒绝、可审计的约束。
 
 ---
 
@@ -508,8 +511,8 @@ Quota-Flow 是这套编排层依赖的配额与模型调用基础设施。当前
 
 代码与完整演示已经开源：
 
-**https://github.com/bbo777/nineflow**
+**https://github.com/bbo777/cinelock**
 
-仓库里包含可运行的 mock/handoff 链路、5 镜头演示项目、62 个测试、13 项审计、7 个 MCP 工具、ffprobe 媒体校验和 ffmpeg 九宫格。你可以先不花一分钱配额，把整条链路跑通，再接入自己的模型。
+仓库里包含可运行的 mock/handoff 链路、5 镜头演示项目、62 个测试、13 项审计、7 个 MCP 工具、ffprobe 媒体校验和 ffmpeg 九宫格。你可以先不花一分钱配额，把整条链路跑通，再接入自己的模型。演示关卡在 `examples/nine-inning-bottom/`，可以直接 fork 成自己的项目。
 
 如果这套思路对你有用，欢迎在 issue 里聊聊你遇到的穿帮现场。尤其是那些“明明用了同一张参考图，还是不像”的案例——它们往往不是模型的问题，而是上下文根本没有被锁住。

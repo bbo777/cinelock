@@ -8,13 +8,13 @@ from pathlib import Path
 
 from support import ROOT  # noqa: F401
 
-from nineflow.media import MediaError, create_contact_sheet, probe_video
+from cinelock.media import MediaError, create_contact_sheet, probe_video
 
 
 @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "需要 ffmpeg 与 ffprobe")
 class MediaTest(unittest.TestCase):
     def setUp(self) -> None:
-        self._tmp = tempfile.TemporaryDirectory(prefix="nineflow-media-")
+        self._tmp = tempfile.TemporaryDirectory(prefix="cinelock-media-")
         self.addCleanup(self._tmp.cleanup)
         self.root = Path(self._tmp.name)
         self.video = self.root / "sample.mp4"
