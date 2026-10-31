@@ -90,7 +90,7 @@ AUDIT_JOB_STATUS_LABELS = {
 
 
 def _status_counts(statuses: Dict[str, int]) -> str:
-    order = ["ready", "warning", "needs_public_url", "not_ready", "blocked"]
+    order = ["ready", "warning", "not_ready", "blocked"]
     parts = []
     for key in order:
         if statuses.get(key):
@@ -245,7 +245,7 @@ def cmd_status(args: argparse.Namespace, ctx: ProjectContext) -> int:
                 [
                     provider.get("id"),
                     provider.get("display_name"),
-                    provider.get("kind"),
+                    provider.get("adapter"),
                     " / ".join(provider.get("modes") or []),
                     provider.get("max_refs"),
                     _status_counts(stats_by_provider.get("statuses") or {}),
@@ -272,17 +272,19 @@ def cmd_status(args: argparse.Namespace, ctx: ProjectContext) -> int:
         print(_table(["镜头", "场景", "时长", "变体状态", "角色状态"], shot_rows))
 
     env = payload["environment"]
-    qf = "可用" if env.get("quota_flow_ready") else ("已安装但环境不满足" if env.get("quota_flow_found") else "未安装")
-    node = env.get("node_version")
+    configured = [
+        item
+        for item in env.get("providers") or []
+        if item.get("configured")
+    ]
     print("")
     print(
-        "环境 Python %s · ffmpeg %s · Node %s（需 ≥%s）· Quota-Flow %s"
+        "环境 Python %s · ffmpeg %s · ffprobe %s · Node 依赖 无 · 已配置远端凭证 %d"
         % (
             env.get("python"),
             "可用" if env.get("ffmpeg") else "缺失",
-            node if node else "缺失",
-            env.get("node_min_major"),
-            qf,
+            "可用" if env.get("ffprobe") else "缺失",
+            len(configured),
         )
     )
     if not pack.get("current"):
@@ -372,7 +374,12 @@ def _selected_providers(args: argparse.Namespace, ctx: ProjectContext) -> Option
     return [str(default)]
 
 
-def _run_jobs(args: argparse.Namespace, ctx: ProjectContext, providers: Optional[List[str]]) -> int:
+def _run_jobs(
+    args: argparse.Namespace,
+    ctx: ProjectContext,
+    providers: Optional[List[str]],
+    options: Optional[Dict[str, Any]] = None,
+) -> int:
     try:
         jobs = execute_many(
             ctx,
@@ -380,6 +387,7 @@ def _run_jobs(args: argparse.Namespace, ctx: ProjectContext, providers: Optional
             provider_ids=providers,
             dry_run=bool(args.dry_run),
             stop_on_error=bool(getattr(args, "stop_on_error", False)),
+            options=options,
         )
     except DispatchError as exc:
         print("执行被拒绝：%s" % exc, file=sys.stderr)
@@ -439,14 +447,21 @@ def _run_jobs(args: argparse.Namespace, ctx: ProjectContext, providers: Optional
 
 
 def cmd_run(args: argparse.Namespace, ctx: ProjectContext) -> int:
-    return _run_jobs(args, ctx, _selected_providers(args, ctx))
+    options = {}
+    if getattr(args, "base_url", None):
+        options["base_url"] = args.base_url
+    if getattr(args, "workflow", None):
+        options["workflow"] = args.workflow
+    if getattr(args, "timeout_sec", None):
+        options["timeout_sec"] = args.timeout_sec
+    return _run_jobs(args, ctx, _selected_providers(args, ctx), options or None)
 
 
 def cmd_handoff(args: argparse.Namespace, ctx: ProjectContext) -> int:
     if not args.shot:
         print("handoff 需要至少一个 --shot", file=sys.stderr)
         return 2
-    return _run_jobs(args, ctx, ["handoff"])
+    return _run_jobs(args, ctx, ["handoff"], {"bundle": "zip" if args.zip else "folder"})
 
 
 def cmd_import(args: argparse.Namespace, ctx: ProjectContext) -> int:
@@ -734,7 +749,7 @@ def cmd_providers(args: argparse.Namespace, ctx: ProjectContext) -> int:
             [
                 pid,
                 profile.get("display_name"),
-                profile.get("kind"),
+                profile.get("adapter"),
                 " / ".join(profile.get("modes") or []),
                 profile.get("max_refs"),
                 " / ".join(str(item) for item in profile.get("durations") or []),
@@ -745,10 +760,10 @@ def cmd_providers(args: argparse.Namespace, ctx: ProjectContext) -> int:
     if args.json:
         print(json.dumps(rows, ensure_ascii=False, indent=2))
         return 0
-    print(_table(["id", "名称", "类型", "支持模式", "参考上限", "时长", "负向词", "Seed"], rows))
+    print(_table(["id", "名称", "适配器", "支持模式", "参考上限", "时长", "负向词", "Seed"], rows))
     print("")
     print("模式：text2video 文生视频 / img2video 单图首帧 / multi_ref 多参考 / first_last 首尾帧")
-    print("Quota-Flow CLI 本身不传时长与 seed；这两项由编译期决定并记录在任务里。")
+    print("mock 与 handoff 无需任何外部依赖；comfyui / http_api 的凭证只从环境变量读取。")
     return 0
 
 
@@ -823,17 +838,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true", help="输出 JSON")
     p.set_defaults(func=cmd_compile)
 
-    p = sub.add_parser("run", help="执行编译结果（mock / handoff / Quota-Flow）")
+    p = sub.add_parser("run", help="执行编译结果（mock / handoff / comfyui / http_api）")
     p.add_argument("--shot", action="append", help="镜头 ID（可重复；省略则全部镜头）")
     p.add_argument("--provider", action="append", help="厂商 ID（可重复；默认项目默认厂商）")
     p.add_argument("--all-providers", action="store_true", help="对全部厂商执行（谨慎）")
     p.add_argument("--dry-run", action="store_true", help="只演练，不调用厂商")
     p.add_argument("--stop-on-error", action="store_true", help="遇到失败或阻断立即停止")
+    p.add_argument("--base-url", help="覆盖 comfyui / http_api 的厂商地址")
+    p.add_argument("--workflow", help="comfyui 工作流路径（项目相对或绝对）")
+    p.add_argument("--timeout", dest="timeout_sec", type=float, help="comfyui / http_api 整体超时秒数")
     p.add_argument("--json", action="store_true", help="输出 JSON")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("handoff", help="导出任意模型可用的手工交接包")
     p.add_argument("--shot", action="append", required=True, help="镜头 ID（可重复）")
+    p.add_argument("--zip", action="store_true", help="同时打包成 <job_id>.zip")
     p.add_argument("--dry-run", action="store_true", help="只演练，不写文件")
     p.add_argument("--json", action="store_true", help="输出 JSON")
     p.set_defaults(func=cmd_handoff)

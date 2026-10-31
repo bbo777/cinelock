@@ -34,7 +34,7 @@
   },
   "defaults": {
     "provider": "mock",
-    "fallback": ["qwenwan", "dola", "bailian", "doubao"],
+    "fallback": ["handoff", "comfyui"],
     "candidates_per_shot": 2,
     "strategy": "quality_first"
   },

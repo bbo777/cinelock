@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import re
 import shutil
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ..context import ProjectContext
-from ..jobs import exports_dir
 from ..util import resolve_within, utc_now, write_json, write_text
-from .common import AdapterOutcome, file_output
+from .common import AdapterOutcome, AdapterRequest, file_output
 
 ROLE_HINTS = {
     "identity": "身份锚点：优先上传，保证脸、发型和球衣号码",
@@ -28,7 +27,7 @@ def _safe(value: Any) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", str(value or "")).strip("._") or "ref"
 
 
-def _readme(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, manifest: Dict[str, Any]) -> str:
+def _readme(project_id: str, variant: Dict[str, Any], job_id: str, manifest: Dict[str, Any]) -> str:
     lines = [
         "# 手工交接包 · %s" % variant.get("shot_id"),
         "",
@@ -44,6 +43,7 @@ def _readme(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, manifest:
         "- Seed：%s（若目标模型支持）" % variant.get("seed"),
         "- 上下文版本：`%s`" % variant.get("context_revision"),
         "- 提示词哈希：`%s`" % variant.get("prompt_sha256"),
+        "- 项目：`%s`" % project_id,
         "- 任务：`%s`" % job_id,
         "",
         "## 使用步骤",
@@ -88,8 +88,10 @@ def _readme(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, manifest:
     return "\n".join(lines)
 
 
-def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: bool = False) -> AdapterOutcome:
-    folder = exports_dir(ctx) / "handoff" / job_id
+def run(request: AdapterRequest) -> AdapterOutcome:
+    variant = request.variant
+    job_id = request.job_id
+    folder = request.exports_dir / "handoff" / job_id
     refs_folder = folder / "refs"
     refs = variant.get("references") or []
     planned: List[str] = []
@@ -97,18 +99,21 @@ def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: b
         planned.append(
             "%s/refs/%02d_%s%s"
             % (
-                _rel(ctx, folder),
+                _rel(request, folder),
                 int(ref.get("order") or 0),
                 _safe(ref.get("asset_id")),
                 Path(str(ref.get("path") or "")).suffix or ".png",
             )
         )
-    base_rel = _rel(ctx, folder)
+    base_rel = _rel(request, folder)
     planned += ["%s/prompt.txt" % base_rel, "%s/manifest.json" % base_rel, "%s/README.md" % base_rel]
     if variant.get("negative_prompt"):
         planned.append("%s/negative.txt" % base_rel)
+    bundle = str(request.option("bundle") or "folder").lower()
+    if bundle == "zip":
+        planned.append("%s.zip" % base_rel)
 
-    if dry_run:
+    if request.dry_run:
         return AdapterOutcome(
             status="dry_run",
             plan=["导出交接包 → %s" % base_rel] + planned,
@@ -119,7 +124,7 @@ def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: b
     manifest_refs: List[Dict[str, Any]] = []
     try:
         for ref in refs:
-            source = resolve_within(ctx.root, str(ref.get("path") or ""))
+            source = resolve_within(request.project_root, str(ref.get("path") or ""))
             if not source.is_file():
                 raise FileNotFoundError("参考图不存在：%s" % ref.get("path"))
             ext = source.suffix or ".png"
@@ -131,7 +136,7 @@ def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: b
                 file_output(
                     target,
                     "reference",
-                    ctx.root,
+                    request.project_root,
                     order=ref.get("order"),
                     asset_id=ref.get("asset_id"),
                     role=ref.get("role"),
@@ -154,19 +159,19 @@ def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: b
 
     prompt_path = folder / "prompt.txt"
     write_text(prompt_path, str(variant.get("prompt") or "") + "\n")
-    outputs.append(file_output(prompt_path, "prompt", ctx.root))
+    outputs.append(file_output(prompt_path, "prompt", request.project_root))
 
     negative_file = None
     if variant.get("negative_prompt"):
         negative_path = folder / "negative.txt"
         write_text(negative_path, str(variant.get("negative_prompt")) + "\n")
         negative_file = "negative.txt"
-        outputs.append(file_output(negative_path, "negative", ctx.root))
+        outputs.append(file_output(negative_path, "negative", request.project_root))
 
     manifest = {
         "schema_version": "1.0",
         "job_id": job_id,
-        "project_id": ctx.project_id,
+        "project_id": request.project_id,
         "shot_id": variant.get("shot_id"),
         "provider_id": variant.get("provider_id"),
         "mode": variant.get("mode"),
@@ -187,17 +192,25 @@ def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: b
     }
     manifest_path = folder / "manifest.json"
     write_json(manifest_path, manifest)
-    outputs.append(file_output(manifest_path, "manifest", ctx.root))
+    outputs.append(file_output(manifest_path, "manifest", request.project_root))
 
     readme_path = folder / "README.md"
-    write_text(readme_path, _readme(ctx, variant, job_id, manifest))
-    outputs.append(file_output(readme_path, "readme", ctx.root))
+    write_text(readme_path, _readme(request.project_id, variant, job_id, manifest))
+    outputs.append(file_output(readme_path, "readme", request.project_root))
+
+    if bundle == "zip":
+        zip_path = request.exports_dir / "handoff" / ("%s.zip" % job_id)
+        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for item in sorted(folder.rglob("*")):
+                if item.is_file():
+                    archive.write(item, item.relative_to(request.exports_dir / "handoff"))
+        outputs.append(file_output(zip_path, "zip", request.project_root, bundle="handoff"))
 
     return AdapterOutcome(status="succeeded", outputs=outputs, plan=planned)
 
 
-def _rel(ctx: ProjectContext, path: Path) -> str:
+def _rel(request: AdapterRequest, path: Path) -> str:
     try:
-        return path.resolve().relative_to(ctx.root.resolve()).as_posix()
+        return path.resolve().relative_to(request.project_root.resolve()).as_posix()
     except ValueError:
         return str(path)

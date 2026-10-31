@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set
 
 from .context import ASSET_KINDS, ASSET_STATUSES, CANONICAL_MODES, ProjectContext
@@ -152,6 +153,32 @@ def _validate_project(ctx: ProjectContext, result: ValidationResult) -> None:
         result.warning("W_CANDIDATES", "defaults.candidates_per_shot 建议 >= 1", where)
 
 
+ADAPTERS = {"mock", "handoff", "comfyui", "http_api"}
+PRESETS = {"kling", "runway", "generic"}
+
+
+def _env_names(profile: Dict[str, Any]) -> List[str]:
+    names = []
+    for key in ("api_key_env", "access_key_env", "secret_key_env"):
+        value = profile.get(key)
+        if _nonempty_str(value):
+            names.append(str(value).strip())
+    return names
+
+
+def _resolve_config_path(ctx: ProjectContext, value: Any) -> Optional[Path]:
+    if not _nonempty_str(value):
+        return None
+    candidate = Path(str(value)).expanduser()
+    if candidate.is_absolute():
+        return candidate
+    for root in (ctx.config_dir, ctx.config_dir.parent, ctx.root):
+        path = (root / candidate).resolve()
+        if path.is_file():
+            return path
+    return None
+
+
 def _validate_providers(ctx: ProjectContext, result: ValidationResult) -> None:
     profiles = ctx.provider_profiles()
     if not profiles:
@@ -161,6 +188,13 @@ def _validate_providers(ctx: ProjectContext, result: ValidationResult) -> None:
         where = "provider:%s" % pid
         if not _nonempty_str(profile.get("display_name")):
             result.warning("W_PROVIDER_NAME", "缺少 display_name", where)
+        adapter = profile.get("adapter")
+        if adapter not in ADAPTERS:
+            result.error(
+                "E_PROVIDER_ADAPTER",
+                "adapter 必须是 %s 之一，当前为 %s" % (" / ".join(sorted(ADAPTERS)), adapter),
+                where,
+            )
         modes = profile.get("modes")
         if not isinstance(modes, list) or not modes:
             result.error("E_PROVIDER_MODES", "modes 不能为空", where)
@@ -174,15 +208,33 @@ def _validate_providers(ctx: ProjectContext, result: ValidationResult) -> None:
         durations = profile.get("durations")
         if not isinstance(durations, list) or not durations or not all(isinstance(x, (int, float)) and x > 0 for x in durations):
             result.error("E_PROVIDER_DURATIONS", "durations 必须是非空正数数组", where)
-        if profile.get("kind", "").startswith("quota_flow"):
-            if not profile.get("cli_provider_id"):
-                result.warning("W_PROVIDER_CLI_ID", "Quota-Flow 适配器需要 cli_provider_id", where)
-            for mode in modes or []:
-                if not isinstance(profile.get("cli_mode_map"), dict):
-                    result.warning("W_PROVIDER_CLI_MAP", "cli_mode_map 缺失", where)
-                    break
-                if mode not in (profile.get("cli_mode_map") or {}):
-                    result.warning("W_PROVIDER_CLI_MAP", "cli_mode_map 未覆盖 %s" % mode, where)
+        if adapter == "comfyui":
+            if not _nonempty_str(profile.get("base_url")):
+                result.warning("W_PROVIDER_BASE_URL", "ComfyUI 建议配置 base_url", where)
+            if _resolve_config_path(ctx, profile.get("workflow")) is None:
+                result.warning(
+                    "W_PROVIDER_WORKFLOW",
+                    "ComfyUI 工作流文件不存在：%s（执行前请复制示例并填写节点图）" % profile.get("workflow"),
+                    where,
+                )
+        if adapter == "http_api":
+            preset = str(profile.get("preset") or "generic")
+            if preset not in PRESETS:
+                result.warning("W_PROVIDER_PRESET", "未知 preset：%s，将按 generic 处理" % preset, where)
+            if preset == "generic":
+                for key in ("submit_url", "status_url"):
+                    if not _nonempty_str(profile.get(key)):
+                        result.error("E_PROVIDER_HTTP", "generic http_api 缺少 %s" % key, where)
+            if _nonempty_str(profile.get("base_url")):
+                url = str(profile.get("base_url"))
+                if not url.startswith(("http://", "https://")):
+                    result.error("E_PROVIDER_BASE_URL", "base_url 必须是 http(s) URL：%s" % url, where)
+            if not _env_names(profile):
+                result.warning(
+                    "W_PROVIDER_AUTH",
+                    "http_api 未声明 api_key_env / access_key_env / secret_key_env；执行前请确认认证方式",
+                    where,
+                )
 
 
 def _validate_bank(ctx: ProjectContext, result: ValidationResult) -> None:
@@ -191,6 +243,9 @@ def _validate_bank(ctx: ProjectContext, result: ValidationResult) -> None:
         result.error("E_BANK_EMPTY", "参考图库为空", "reference_bank.json")
         return
     seen: Set[str] = set()
+    url_required = any(
+        str(profile.get("image_input") or "") == "url" for profile in ctx.provider_profiles().values()
+    )
     public_url_missing = 0
     for asset in _dicts(assets):
         aid = asset.get("asset_id")
@@ -256,10 +311,10 @@ def _validate_bank(ctx: ProjectContext, result: ValidationResult) -> None:
         elif not url.startswith("https://"):
             result.warning("W_ASSET_PUBLIC_URL_HTTP", "API 型厂商通常要求 https", where)
 
-    if public_url_missing:
+    if public_url_missing and url_required:
         result.warning(
             "W_PUBLIC_URL_MISSING",
-            "%d 张参考图没有 public_url；Quota-Flow 的真实生成需要公网 https URL，mock/handoff 不受影响" % public_url_missing,
+            "%d 张参考图没有 public_url；当前厂商配置要求以 URL 方式提交参考图" % public_url_missing,
             "reference_bank.json",
         )
 

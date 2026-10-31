@@ -20,7 +20,7 @@
 
 **摘要**
 
-1 个原创角色、2 个场景、5 个镜头、4 个模型、20 个变体共享同一份上下文修订。本文拆解哈希锁、连续性状态机、确定性编译、13 项分层审计、MCP Server 接入，以及 ffprobe 与九宫格如何把“看起来对”变成可检查的产物。演示项目因算力受限，停留在关键帧与上下文编译阶段，当前只有 mock 占位视频；Handoff 与 Issue #11 把生成环节开放给社区。
+1 个原创角色、2 个场景、5 个镜头、5 个厂商、25 个变体共享同一份上下文修订。本文拆解哈希锁、连续性状态机、确定性编译、13 项分层审计、MCP Server 接入，以及 ffprobe 与九宫格如何把“看起来对”变成可检查的产物。演示项目因算力受限，停留在关键帧与上下文编译阶段，当前只有 mock 占位视频；Handoff 与 Issue #11 把生成环节开放给社区。
 
 **分类**
 
@@ -52,7 +52,7 @@ https://github.com/bbo777/cinelock
 
 **正文**
 
-最近在做一个多模型 AI 视频的编排层，起因很实际：同一场戏用 4 个模型生成，角色服装、伤情、道具、光线全在漂，最后根本说不清哪一版用了哪张参考图。
+最近在做一个多模型 AI 视频的编排层，起因很实际：同一场戏用好几个模型生成，角色服装、伤情、道具、光线全在漂，最后根本说不清哪一版用了哪张参考图。
 
 我的思路不是继续调提示词，而是把“一致性”变成可验证的约束：
 
@@ -61,9 +61,10 @@ https://github.com/bbo777/cinelock
 3. 确定性编译：固定拼接顺序、参考图优先级、截断规则和种子；同一修订重编译必须得到同一提示词哈希。
 4. 分层审计：13 项检查只回答“证据链是否自洽”；job_status / dry_run 单独报告；综合结论再看上下文是否过期。模型失败不等于证据链失败。
 5. 产物校验：ffprobe 检查时长/分辨率/编码，ffmpeg 生成 3×3 九宫格做人工快速对比。
-6. MCP 接入：内置零依赖 MCP stdio Server，Claude Desktop / WorkBuddy 加 9 行 JSON 就能查修订、取编译结果、跑审计，不用重新实现任何语义。
+6. MCP 接入：内置零依赖 MCP stdio Server，Claude Desktop / WorkBuddy 加 9 行 JSON 就能查修订、取编译结果、跑审计、导出交接包，不用重新实现任何语义。
+7. 平台无关：统一 AdapterRequest / AdapterOutcome 协议，内置 mock / handoff / comfyui / 通用 http_api 四种适配器；纯 Python，不依赖 Node，也不绑定某一家 CLI。
 
-演示项目是 1 个原创角色、2 个场景、5 镜头 × 4 模型 = 20 个变体，共享一个修订，67 个测试，最近一次 mock 任务 13/13 通过。默认先跑 mock/handoff，不消耗真实配额。
+演示项目是 1 个原创角色、2 个场景、5 镜头 × 5 厂商 = 25 个变体，共享一个修订，76 个测试，最近一次 mock 任务 13/13 通过。默认先跑 mock/handoff，不消耗真实算力。
 
 说点实话：我只有一台没有独显的 ASUS VivoBook，也买不起几百上千元的生成额度。所以引擎、哈希锁、状态机、审计闭环都做完了，5 个镜头却没有真实生成，仓库里是 mock 占位视频。这不是“正在生成中”，是“卡在算力这一步”。
 
@@ -81,7 +82,7 @@ https://github.com/bbo777/cinelock
 
 1/
 
-One original character. Two scenes. Five shots. Four AI video providers. Twenty variants. One context revision: 9bb2cfb6449f.
+One original character. Two scenes. Five shots. Five AI video providers. Twenty-five variants. One context revision: 9b1c685fec55.
 
 The hard part isn't generating clips. It's proving every model saw the same character, the same state, and the same instructions. 🧵
 
@@ -113,7 +114,7 @@ A failed provider is not an evidence failure. A stale context is not a pass.
 
 5/
 
-CineLock also ships a zero-dependency MCP stdio server. Claude Desktop or WorkBuddy can query the revision, fetch a compiled variant, run the 13-check audit, or build a preview — no separate API, no reimplementation.
+CineLock also ships a zero-dependency MCP stdio server. Claude Desktop or WorkBuddy can query the revision, fetch a compiled variant, run the 13-check audit, export a handoff pack, or submit a ComfyUI workflow — no separate API, no reimplementation.
 
 9 lines of JSON.
 
@@ -121,7 +122,9 @@ CineLock also ships a zero-dependency MCP stdio server. Claude Desktop or WorkBu
 
 ffprobe validates downloads. ffmpeg builds a 3×3 contact sheet for human review.
 
-Result: 67 tests, 20 variants, 13/13 checks pass on the demo. Mock/handoff runs cost zero quota.
+CineLock ships four adapters: mock, handoff, ComfyUI HTTP, and a generic official-API adapter with Kling/Runway presets.
+
+Result: 76 tests, 25 variants, 13/13 checks pass on the demo. Mock/handoff runs cost zero compute.
 
 But the five shots are not generated yet. I only have a thin laptop with no GPU and no budget for video credits. The repo ships mock placeholders. The missing step is compute, not context.
 
@@ -156,7 +159,7 @@ https://github.com/bbo777/cinelock
 
 **First comment（作者自述）**
 
-I built this after watching the same 5-shot sequence drift across four providers. Prompt engineering didn't help, because each model only sees the context you hand it at generation time.
+I built this after watching the same 5-shot sequence drift across multiple providers. Prompt engineering didn't help, because each model only sees the context you hand it at generation time.
 
 CineLock treats continuity as an engineering constraint:
 
@@ -164,10 +167,11 @@ CineLock treats continuity as an engineering constraint:
 - A state machine replays per-shot state deltas (wardrobe, injuries, props), and the compiler consumes the resulting snapshot instead of the raw character card.
 - A 13-check audit separates evidence integrity from job outcome. A provider failure and a stale-context success are different failure modes.
 - ffprobe validates downloaded media; ffmpeg produces a 3×3 contact sheet for human review.
-- A zero-dependency MCP stdio server exposes status, variant compilation, audit, job listing, preview/full build, and contact sheets to Claude Desktop or WorkBuddy.
+- A zero-dependency MCP stdio server exposes status, variant compilation, audit, job listing, preview/full build, contact sheets, handoff export, and ComfyUI/HTTP generation to Claude Desktop or WorkBuddy.
+- Four adapters share one protocol: mock, handoff, ComfyUI HTTP, and a generic official-API adapter with Kling/Runway presets. Pure Python; no Node or vendor CLI.
 - `import` binds an externally generated file to the current revision and prompt hash, records its SHA-256 and ffprobe metadata, and runs the same 13-check audit.
 
-The demo is 1 original character, 2 scenes, 5 shots × 4 providers = 20 variants with one revision. 67 tests pass. The mock/handoff path costs no quota, so you can exercise the full loop before connecting a real provider.
+The demo is 1 original character, 2 scenes, 5 shots × 5 providers = 25 variants with one revision. 76 tests pass. The mock/handoff path costs no compute, so you can exercise the full loop before connecting a real provider.
 
 The five shots are not generated for real. I only have a thin laptop with no discrete GPU and no budget for generation credits, so the repository ships mock placeholders. The missing step is compute, not context. I package every shot as a verifiable handoff pack and invite people to generate one with their own credits, then bind it back through `import` and the audit. Claim a shot in Issue #11.
 
@@ -177,7 +181,7 @@ It does not make models deterministic or judge visual quality. It bounds the ran
 
 ## 发布检查清单
 
-- [x] GitHub topics：`mcp` / `mcp-server` / `ai-video` / `aigc` / `continuity` / `claude-desktop` / `workbuddy` / `python`
+- [ ] GitHub topics：`ai-video` / `llm` / `context-management` / `comfyui` / `mcp` / `claude-desktop` / `midjourney`（移除 quota-flow 相关标签）
 - [x] GitHub 仓库改名 `nineflow` → `cinelock`；旧 URL 已验证返回 301 重定向到 `https://github.com/bbo777/cinelock`
 - [x] 社区任务 Issues #1–#11：`https://github.com/bbo777/cinelock/issues`（#11 为算力赞助入口）
 - [x] 公开看板 Nine Inning Bottom：`https://github.com/users/bbo777/projects/5`

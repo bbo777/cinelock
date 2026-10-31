@@ -1,32 +1,55 @@
 from __future__ import annotations
 
+import os
 import platform
 import shutil
 from typing import Any, Dict
 
-from .adapters.quota_flow import NODE_MIN_MAJOR, _cli_node, _needs_node, _node_major, _resolve_cli
+from .adapters import adapter_names
 from .context import ProjectContext
 
 
+def _env_status(profile: Dict[str, Any]) -> Dict[str, Any]:
+    names = []
+    for key in ("api_key_env", "access_key_env", "secret_key_env"):
+        value = profile.get(key)
+        if isinstance(value, str) and value.strip():
+            names.append(value.strip())
+    for name in profile.get("requires_env") or []:
+        if isinstance(name, str) and name.strip() and name.strip() not in names:
+            names.append(name.strip())
+    if not names:
+        return {"configured": None, "env": []}
+    return {
+        "configured": all(bool(os.environ.get(name)) for name in names),
+        "env": names,
+        "missing": [name for name in names if not os.environ.get(name)],
+    }
+
+
 def environment_report(ctx: ProjectContext) -> Dict[str, Any]:
-    cli, notes = _resolve_cli()
-    needs_node = _needs_node(cli) if cli else False
-    node_path = _cli_node(cli) if cli else None
-    node_major = _node_major(node_path) if needs_node else None
-    node_ok = bool(node_major) and node_major >= NODE_MIN_MAJOR
-    quota_flow_ready = bool(cli) and (not needs_node or node_ok)
+    profiles = ctx.provider_profiles()
+    providers = []
+    for provider_id in ctx.provider_order():
+        profile = profiles.get(provider_id) or {}
+        item: Dict[str, Any] = {
+            "provider_id": provider_id,
+            "adapter": profile.get("adapter"),
+            "preset": profile.get("preset"),
+            "enabled": bool(profile.get("enabled", True)),
+            "experimental": bool(profile.get("experimental")),
+            "base_url": profile.get("base_url"),
+        }
+        item.update(_env_status(profile))
+        providers.append(item)
+
     return {
         "python": platform.python_version(),
         "platform": platform.platform(),
         "project_root": str(ctx.root),
         "ffmpeg": bool(shutil.which("ffmpeg")),
         "ffprobe": bool(shutil.which("ffprobe")),
-        "quota_flow_found": bool(cli),
-        "quota_flow_cli": " ".join(cli) if cli else None,
-        "quota_flow_node": node_path,
-        "quota_flow_notes": notes,
-        "quota_flow_ready": quota_flow_ready,
-        "node_version": node_major,
-        "node_min_major": NODE_MIN_MAJOR,
-        "node_ok": node_ok,
+        "node_required": False,
+        "adapters": adapter_names(),
+        "providers": providers,
     }

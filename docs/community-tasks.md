@@ -18,10 +18,11 @@
 | [#7](https://github.com/bbo777/cinelock/issues/7) | 提案：扩展镜07（特训蒙太奇） |
 | [#8](https://github.com/bbo777/cinelock/issues/8) | 用授权资产替换占位参考图 |
 | [#9](https://github.com/bbo777/cinelock/issues/9) | 输出侧连续性核验（visual_qc） |
-| [#10](https://github.com/bbo777/cinelock/issues/10) | Quota-Flow 真机出片记录 |
 | [#11](https://github.com/bbo777/cinelock/issues/11) | 求大佬赞助算力（认领一个镜头） |
 
-> 当前事实（2026-10-31）：**1 个原创角色、2 个场景、5 个镜头、4 个启用厂商、20 个变体、56 次参考图引用**，共享修订 `9bb2cfb6449f`；**67 项测试通过**；**成片 0 个**。
+> 当前事实（2026-10-31）：**1 个原创角色、2 个场景、5 个镜头、5 个厂商、25 个变体、79 次参考图引用**，共享修订 `9b1c685fec55`；**76 项测试通过**；**成片 0 个**。
+>
+> 厂商矩阵已改为平台无关的四类适配器：`mock` / `handoff` / `comfyui` / `http_api`。旧的 Quota-Flow 适配器已归档到 `legacy/`，不再参与构建。
 >
 > 外部模型的结果不再只能贴在 Issue 里：用 `python studio.py import` 登记进任务账本，再用同一套 13 项审计核验。完整步骤见 [Handoff 傻瓜式操作指南](handoff-guide.md)。
 
@@ -33,7 +34,7 @@
 
 生成完成后先留在 In Progress，等对应 Issue 里的人工审片结论确认，再移入 Done。
 
-实际标签：`good first issue`（#1）、`help wanted`、`enhancement`（#6 / #7 / #9 / #10）。
+实际标签：`good first issue`（#1）、`help wanted`、`enhancement`（#6 / #7 / #9）。
 
 ---
 
@@ -52,7 +53,7 @@
 任务：E01-004
 厂商 / 模型版本：
 生成日期：
-上下文修订：9bb2cfb6449f...
+上下文修订：9b1c685fec55...
 提示词哈希：774c474761d3...
 Seed（如支持）：
 实际时长 / 分辨率 / 编码：
@@ -65,14 +66,15 @@ Seed（如支持）：
 
 ## A. 已编译、可直接执行：E01-001 ~ E01-005
 
-5 个镜头的正向/负向提示词已经按 4 个厂商编译好，位于：
+5 个镜头的正向/负向提示词已经按 5 个厂商编译好，位于：
 
 ```text
 examples/nine-inning-bottom/context/shots/E01-00X/
-  handoff.prompt.txt     手工交接（任意支持多参考图的模型）
-  qwenwan.prompt.txt     千问万相（单图首帧）
-  yuanbao.prompt.txt     元宝（单图首帧）
-  mock.prompt.txt        占位链路，仅用于测试
+  handoff.prompt.txt          手工交接（任意支持多参考图的模型）
+  comfyui.prompt.txt          ComfyUI（多参考 / 首尾帧）
+  official_kling.prompt.txt   可灵官方 API（首帧 / 首尾帧）
+  official_runway.prompt.txt  Runway 官方 API（单图首帧）
+  mock.prompt.txt             占位链路，仅用于测试
 ```
 
 参考图在 `examples/nine-inning-bottom/refs/`，上传顺序以对应 `handoff.json` 的 `references` 为准。**第 1 张永远是身份锚点，不要改顺序。**
@@ -105,7 +107,7 @@ examples/nine-inning-bottom/context/shots/E01-00X/
 - 已编译：[handoff.prompt.txt](../examples/nine-inning-bottom/context/shots/E01-004/handoff.prompt.txt)
 - 真实交接包（含 5 张参考图、prompt、negative、manifest）：
   [`docs/showcase/handoff-E01-004/`](showcase/handoff-E01-004/)
-  - 任务：`JOB_20261031T134503Z_E01-004_handoff_adb8f9`
+  - 任务：`JOB_20261031T151022Z_E01-004_handoff_fdc887`
   - 提示词哈希：`774c474761d35f63f298e7d52889e321352f9bd85b51df789d13020097e659b5`
   - 该包审计 13/13
 - 验收：脸部特写不崩；三处伤情方向正确（左脸、下唇、右袖）；球棒仍在手中；没有额外伤口
@@ -198,26 +200,22 @@ CineLock 目前只做输入侧治理与证据链审计。我们明确**没有**�
 
 ---
 
-## E. Quota-Flow 真机出片记录
+## E. 真实适配器出片记录（ComfyUI / 官方 API）
 
-当前演示只跑过 mock 与 handoff，**没有真实厂商出片**。已安装的 Quota-Flow CLI 0.1.0 只注册 `qwenwan` / `yuanbao`，两家都只有单图首帧。
+当前演示只跑过 mock、handoff，以及测试里的模拟 ComfyUI 服务，**没有真实模型出片**。
 
-- 目标：在合规前提下，用真实登录态跑至少一个镜头，记录：
-  - CLI 版本、厂商、模型、生成时间；
-  - 是否返回 dry-run（dry-run 不是成功视频，也会可能扣减本地额度）；
-  - 实际时长/分辨率与请求值的差异；
-  - 配额账本变化；
-  - 产物审计结果。
-- 禁止：绕过配额、共享账号、伪造登录态、规避风控。
-- 验收：任务记录完整；dry-run 被正确标注；不以 mock 冒充真实产物；失败样本也回传。
+- **ComfyUI**：需要一张能跑视频的显卡、可用的 AnimateDiff / SVD 工作流，以及 `ComfyUI-VideoHelperSuite`；记录 ComfyUI 版本、工作流 SHA-256、模型、步数、分辨率、实际时长、GPU 型号和产物审计结果。
+- **官方 API**：需要自己的 Kling / Runway 凭证；记录厂商、模型、任务 ID、请求模式、实际时长与分辨率、费用和产物审计结果。密钥不得贴进 Issue 或 PR。
+- 禁止：绕过配额、共享账号、伪造凭证、规避风控。
+- 验收：任务记录完整；失败样本也回传；不以 mock 或外部导入冒充真实产物。
 
 ---
 
 ## F. 新增厂商 / MCP 客户端
 
-- 新厂商：在 `config/providers.json` 增加能力矩阵（参考图上限、模式、时长、seed），实现适配器，补“静默回退拒绝”测试。
-- 新 MCP 客户端：用 `cinelock_status` / `cinelock_variant` / `cinelock_audit` / `cinelock_build` 做一次只读冒烟，记录客户端版本与工具返回。
-- 验收：不破坏现有 67 项测试；新能力有文档；不泄露本地路径之外的敏感信息。
+- 新厂商：优先用 `http_api` 的 `submit_url` / `status_url` / `payload_template` 等字段配置；现有适配器不够时再实现新适配器，补协议、轮询、失败路径测试。
+- 新 MCP 客户端：用 `cinelock_status` / `cinelock_variant` / `cinelock_audit` / `cinelock_build` 做一次只读冒烟，再试 `cinelock_handoff_export`，记录客户端版本与工具返回。
+- 验收：不破坏现有 76 项测试；新能力有文档；不泄露本地路径之外的敏感信息。
 
 ---
 
@@ -253,7 +251,7 @@ CineLock 目前只做输入侧治理与证据链审计。我们明确**没有**�
 标签：shot
 正文：
 领取 E01-004。现成交接包：docs/showcase/handoff-E01-004/
-上下文修订：9bb2cfb6449f...；提示词哈希：774c474761d3...
+上下文修订：9b1c685fec55...；提示词哈希：774c474761d3...
 重点验收：左脸淤青、下唇破口、右袖撕裂、球棒仍在手，且不新增伤口。
 完成后附 ffprobe 结果、九宫格链接、audit 13/13 截图/输出。
 ```
@@ -305,7 +303,7 @@ CineLock 目前只做输入侧治理与证据链审计。我们明确**没有**�
 **代码 / 资产任务**
 
 - [ ] `validate` 与 `build` 通过
-- [ ] 67 项测试仍全绿（新增行为有测试）
+- [ ] 76 项测试仍全绿（新增行为有测试）
 - [ ] 保持 Python 3.8 兼容，默认不引入重型依赖
 - [ ] 文档明确写出能力边界，不夸大
 - [ ] 不包含凭据、登录态或未授权素材

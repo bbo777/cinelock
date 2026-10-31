@@ -57,6 +57,9 @@ class McpServerTest(TempProjectCase):
                 "cinelock_jobs",
                 "cinelock_build",
                 "cinelock_contact_sheet",
+                "cinelock_handoff_export",
+                "cinelock_generate_comfyui",
+                "cinelock_generate_http",
             },
         )
         for tool in tools:
@@ -103,6 +106,55 @@ class McpServerTest(TempProjectCase):
 
         conflict = self.call("cinelock_build", {"write": True, "provider_id": "mock"})
         self.assertTrue(conflict["isError"])
+
+    def test_legacy_nineflow_names_are_accepted_as_aliases(self) -> None:
+        alias = self.payload(self.call("nineflow_status"))
+        direct = self.payload(self.call("cinelock_status"))
+        self.assertEqual(alias["context_revision"], direct["context_revision"])
+
+        variant = self.payload(
+            self.call("nineflow_variant", {"shot_id": "E01-001", "provider_id": "mock", "include_prompt": False})
+        )
+        self.assertEqual(variant["shot_id"], "E01-001")
+
+    def test_handoff_export_tool_writes_zip_and_folder(self) -> None:
+        result = self.payload(
+            self.call("cinelock_handoff_export", {"shot_id": "E01-001", "format": "zip"})
+        )
+        self.assertEqual(result["status"], "succeeded", result.get("error"))
+        self.assertTrue(result["zip"])
+        self.assertTrue((self.project_dir / result["zip"]).is_file())
+        self.assertTrue(result["folder"])
+        folder = self.project_dir / result["folder"]
+        self.assertTrue((folder / "manifest.json").is_file())
+        self.assertTrue((folder / "prompt.txt").is_file())
+
+    def test_comfyui_tool_dry_run_returns_plan_and_defaults(self) -> None:
+        result = self.payload(
+            self.call("cinelock_generate_comfyui", {"shot_id": "E01-001", "dry_run": True})
+        )
+        self.assertEqual(result["status"], "dry_run")
+        self.assertEqual(result["adapter"], "comfyui")
+        self.assertEqual(result["base_url"], "http://127.0.0.1:8188")
+        self.assertTrue(str(result["workflow"]).endswith("workflow.example.json"))
+
+    def test_http_tool_dry_run_uses_provider_base_url(self) -> None:
+        result = self.payload(
+            self.call(
+                "cinelock_generate_http",
+                {"shot_id": "E01-001", "provider_id": "official_runway", "dry_run": True},
+            )
+        )
+        self.assertEqual(result["status"], "dry_run")
+        self.assertEqual(result["adapter"], "http_api")
+        self.assertEqual(result["base_url"], "https://api.dev.runwayml.com")
+
+    def test_http_tool_rejects_non_http_provider(self) -> None:
+        rejected = self.call(
+            "cinelock_generate_http", {"shot_id": "E01-001", "provider_id": "mock"}
+        )
+        self.assertTrue(rejected["isError"])
+        self.assertIn("http_api", rejected["content"][0]["text"])
 
     def test_tool_errors_are_returned_as_results(self) -> None:
         missing = self.call(

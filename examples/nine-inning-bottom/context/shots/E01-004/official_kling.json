@@ -3,25 +3,38 @@
   "shot_id": "E01-004",
   "episode_id": "E01",
   "scene_id": "SC02_BATTERBOX_DUSK",
-  "provider_id": "yuanbao",
+  "provider_id": "official_kling",
   "provider": {
-    "id": "yuanbao",
-    "display_name": "腾讯元宝·混元",
-    "kind": "quota_flow_webview",
-    "cli_provider_id": "yuanbao",
-    "cli_available": true,
+    "id": "official_kling",
+    "display_name": "可灵官方 API（实验）",
+    "adapter": "http_api",
+    "preset": "kling",
     "enabled": true,
+    "experimental": true,
     "modes": [
       "text2video",
-      "img2video"
+      "img2video",
+      "first_last"
     ],
-    "max_refs": 1,
+    "max_refs": 2,
     "durations": [
-      5
+      5,
+      10
     ],
-    "ref_semantics": "first_frame",
-    "supports_negative_prompt": false,
-    "supports_seed": false
+    "ref_semantics": "first_last_frames",
+    "supports_negative_prompt": true,
+    "supports_seed": false,
+    "base_url": "https://api.klingai.com",
+    "workflow": null,
+    "model": "kling-v1",
+    "image_input": "base64",
+    "timeout_sec": 900,
+    "poll_interval_sec": 5,
+    "api_key_env": null,
+    "access_key_env": "KLING_ACCESS_KEY",
+    "secret_key_env": "KLING_SECRET_KEY",
+    "ratio_map": null,
+    "send_seed": null
   },
   "mode": "img2video",
   "mode_label": "图生视频（单图首帧）",
@@ -33,16 +46,16 @@
   "aspect_ratio": "16:9",
   "resolution": "1920x1080",
   "fps": 24,
-  "seed": 1687424737,
+  "seed": 300252403,
   "seed_supported": false,
   "candidate_index": 0,
-  "prompt": "cinematic 2D anime, hand-drawn cel animation, visible ink line work, flat color with subtle gradient, slight film grain, restrained warm palette, sports drama staging, 16:9 composition. Lin Ye (CH_LINYE_01): 19-year-old male baseball player, lean athletic build, short slightly messy black hair, sharp dark eyes, angular face, faint scar over his right eyebrow, warm tan skin, wearing a white home jersey with navy pinstripes and the number 7 on the back, navy cap, black batting gloves. Current wardrobe: dirty white home jersey, right sleeve torn at the elbow, bruised left cheek, small cut on the lower lip. Expression: pain. Visible injuries: bruise on left cheek, small cut on lower lip. Props in hand: wooden baseball bat. Identity invariants: jersey number 7; scar over the right eyebrow; black batting gloves; short black hair. Scene: worn dirt batter's box in an old high-school baseball field, dusk. Lighting: golden-hour backlight from the outfield, dust haze, rim light on the batter, deep blue sky. Composition: batter's box centered, diamond receding into dust haze, low horizon. Shot: tight close-up, face fills frame. Camera: static camera, locked-off. Action: Close on Lin Ye's face as he touches his bruised left cheek with a gloved hand, breathes through the pain, then looks up at the pitcher. Performance: the character speaks a short, restrained line; audio is added in post; no on-screen text. Continuity: this shot follows E01-003. Changes: Lin Ye: wardrobe home_dirty -> home_injured; injury + bruise on left cheek; injury + small cut on lower lip. All listed dirt, injuries and props persist into later shots. Reference images, in order: [1] Lin Ye — identity anchor used as first frame. Animate from the first-frame still in [1]. Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant. clean line art, consistent character design, stable face, natural weight, no morphing, no character drift. preserve character identity, stable face, natural motion. Avoid: different hair color, different jersey number, long hair, beard, tattoos, photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs.",
-  "prompt_chars": 2318,
-  "prompt_sha256": "fd83569865dbbee2b378bc55d827b150d19a8ffa5f218584bc5e42bac4635174",
+  "prompt": "cinematic 2D anime, hand-drawn cel animation, visible ink line work, flat color with subtle gradient, slight film grain, restrained warm palette, sports drama staging, 16:9 composition. Lin Ye (CH_LINYE_01): 19-year-old male baseball player, lean athletic build, short slightly messy black hair, sharp dark eyes, angular face, faint scar over his right eyebrow, warm tan skin, wearing a white home jersey with navy pinstripes and the number 7 on the back, navy cap, black batting gloves. Current wardrobe: dirty white home jersey, right sleeve torn at the elbow, bruised left cheek, small cut on the lower lip. Expression: pain. Visible injuries: bruise on left cheek, small cut on lower lip. Props in hand: wooden baseball bat. Identity invariants: jersey number 7; scar over the right eyebrow; black batting gloves; short black hair. Scene: worn dirt batter's box in an old high-school baseball field, dusk. Lighting: golden-hour backlight from the outfield, dust haze, rim light on the batter, deep blue sky. Composition: batter's box centered, diamond receding into dust haze, low horizon. Shot: tight close-up, face fills frame. Camera: static camera, locked-off. Action: Close on Lin Ye's face as he touches his bruised left cheek with a gloved hand, breathes through the pain, then looks up at the pitcher. Performance: the character speaks a short, restrained line; audio is added in post; no on-screen text. Continuity: this shot follows E01-003. Changes: Lin Ye: wardrobe home_dirty -> home_injured; injury + bruise on left cheek; injury + small cut on lower lip. All listed dirt, injuries and props persist into later shots. Reference images, in order: [1] Lin Ye — identity anchor used as first frame. Animate from the first-frame still in [1]. Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant. clean line art, consistent character design, stable face, natural weight, no morphing, no character drift. preserve character identity, stable face, natural motion.",
+  "prompt_chars": 2147,
+  "prompt_sha256": "4ce9e90cb8c9258af42d03da52970c46ff476643f46106da52e830d0519517d7",
   "negative_prompt": "photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs, duplicate face, cross-eyed, text, subtitle, watermark, logo, UI, frame border, oversaturated, neon, lens flare, character drift, face swap, aging, different hair color, different jersey number, long hair, beard, tattoos",
   "negative_sha256": "00aa0306d91f63ddccd1e04d10f70d00a24b7c89c665a7d6a2d3d8a7b7dd91d8",
-  "negative_mode": "inline",
-  "negative_inline": "Avoid: different hair color, different jersey number, long hair, beard, tattoos, photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs.",
+  "negative_mode": "separate",
+  "negative_inline": "",
   "reference_legend": "Reference images, in order: [1] Lin Ye — identity anchor used as first frame. Animate from the first-frame still in [1].",
   "references": [
     {
@@ -150,37 +163,27 @@
     }
   ],
   "dispatch": {
-    "adapter": "quota_flow",
-    "quota_flow_provider": "yuanbao",
-    "quota_flow_mode": "img2video",
-    "requires_public_urls": true,
-    "image_urls": [],
-    "missing_public_urls": [
-      "REF_LINYE_FRONT_V01"
+    "adapter": "http_api",
+    "endpoint": "https://api.klingai.com",
+    "preset": "kling",
+    "requires_env": [
+      "KLING_ACCESS_KEY",
+      "KLING_SECRET_KEY"
     ],
-    "non_https_public_urls": [],
-    "ready": false,
-    "block_reasons": [
-      "缺少 public_url：REF_LINYE_FRONT_V01"
-    ]
+    "experimental": true,
+    "public_urls": [],
+    "ready": true,
+    "block_reasons": []
   },
   "warnings": [
     {
       "code": "W_IDENTITY_AS_FIRST_FRAME",
       "message": "没有首帧关键帧，使用 Lin Ye 的身份锚点作为首帧；背景和姿势需由提示词重建"
-    },
-    {
-      "code": "W_NEGATIVE_INLINE",
-      "message": "厂商不支持独立负向提示词，已把角色负向词并入正向提示词（Avoid: ...）"
-    },
-    {
-      "code": "W_PUBLIC_URL_MISSING",
-      "message": "1 张参考图缺少 public_url；Quota-Flow 生成前需要补公网 https URL"
     }
   ],
   "blockers": [],
-  "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
-  "short_revision": "9bb2cfb6449f",
-  "compiled_at": "2026-10-31T14:08:15Z",
-  "variant_sha256": "1a2a85649380818350764b204ab18c5699991afe18a70816f98591f6b968f58c"
+  "context_revision": "9b1c685fec55813dcb96a4d8a729d833df77d5476ad7cdd029267f1cbf5b2e31",
+  "short_revision": "9b1c685fec55",
+  "compiled_at": "2026-10-31T14:56:04Z",
+  "variant_sha256": "0e77d0951f70ffe2213179f8565450320cf39789c0f60988c3989c0a5292229f"
 }

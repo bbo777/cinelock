@@ -3,25 +3,40 @@
   "shot_id": "E01-002",
   "episode_id": "E01",
   "scene_id": "SC01_DUGUET_DUSK",
-  "provider_id": "yuanbao",
+  "provider_id": "official_runway",
   "provider": {
-    "id": "yuanbao",
-    "display_name": "腾讯元宝·混元",
-    "kind": "quota_flow_webview",
-    "cli_provider_id": "yuanbao",
-    "cli_available": true,
+    "id": "official_runway",
+    "display_name": "Runway 官方 API（实验）",
+    "adapter": "http_api",
+    "preset": "runway",
     "enabled": true,
+    "experimental": true,
     "modes": [
       "text2video",
       "img2video"
     ],
     "max_refs": 1,
     "durations": [
-      5
+      5,
+      10
     ],
     "ref_semantics": "first_frame",
     "supports_negative_prompt": false,
-    "supports_seed": false
+    "supports_seed": true,
+    "base_url": "https://api.dev.runwayml.com",
+    "workflow": null,
+    "model": "gen3a_turbo",
+    "image_input": "data_uri",
+    "timeout_sec": 900,
+    "poll_interval_sec": 5,
+    "api_key_env": "RUNWAY_API_KEY",
+    "access_key_env": null,
+    "secret_key_env": null,
+    "ratio_map": {
+      "16:9": "1280:768",
+      "9:16": "768:1280"
+    },
+    "send_seed": true
   },
   "mode": "img2video",
   "mode_label": "图生视频（单图首帧）",
@@ -29,12 +44,12 @@
   "mode_instruction": "Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant.",
   "duration_sec": 5,
   "requested_duration_sec": 6,
-  "duration_choice": "truncated",
+  "duration_choice": "nearest",
   "aspect_ratio": "16:9",
   "resolution": "1920x1080",
   "fps": 24,
-  "seed": 1165995091,
-  "seed_supported": false,
+  "seed": 484163141,
+  "seed_supported": true,
   "candidate_index": 0,
   "prompt": "cinematic 2D anime, hand-drawn cel animation, visible ink line work, flat color with subtle gradient, slight film grain, restrained warm palette, sports drama staging, 16:9 composition. Lin Ye (CH_LINYE_01): 19-year-old male baseball player, lean athletic build, short slightly messy black hair, sharp dark eyes, angular face, faint scar over his right eyebrow, warm tan skin, wearing a white home jersey with navy pinstripes and the number 7 on the back, navy cap, black batting gloves. Current wardrobe: white home jersey stained with infield dirt and sweat, navy cap slightly askew, muddy knees. Expression: determined. Visible injuries: none. Props in hand: wooden baseball bat. Identity invariants: jersey number 7; scar over the right eyebrow; black batting gloves; short black hair. Scene: old high-school baseball dugout, dusk. Lighting: low warm sunset raking across the dugout, long shadows, dust in the air, deep blue ambient shadows. Composition: dugout roof frames the character on the left third, empty field receding behind. Shot: close-up, shoulders up. Camera: handheld, slight shake. Action: Lin Ye rises from the bench, dust and infield dirt smearing his white jersey as he grabs his bat, jaw set. Performance: the character speaks a short, restrained line; audio is added in post; no on-screen text. Continuity: this shot follows E01-001. Changes: Lin Ye: wardrobe home_clean -> home_dirty. All listed dirt, injuries and props persist into later shots. Reference images, in order: [1] Lin Ye — identity anchor used as first frame. Animate from the first-frame still in [1]. Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant. clean line art, consistent character design, stable face, natural weight, no morphing, no character drift. preserve character identity, stable face, natural motion. Avoid: different hair color, different jersey number, long hair, beard, tattoos, photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs.",
   "prompt_chars": 2155,
@@ -140,19 +155,16 @@
     }
   ],
   "dispatch": {
-    "adapter": "quota_flow",
-    "quota_flow_provider": "yuanbao",
-    "quota_flow_mode": "img2video",
-    "requires_public_urls": true,
-    "image_urls": [],
-    "missing_public_urls": [
-      "REF_LINYE_FRONT_V01"
+    "adapter": "http_api",
+    "endpoint": "https://api.dev.runwayml.com",
+    "preset": "runway",
+    "requires_env": [
+      "RUNWAY_API_KEY"
     ],
-    "non_https_public_urls": [],
-    "ready": false,
-    "block_reasons": [
-      "缺少 public_url：REF_LINYE_FRONT_V01"
-    ]
+    "experimental": true,
+    "public_urls": [],
+    "ready": true,
+    "block_reasons": []
   },
   "warnings": [
     {
@@ -165,16 +177,12 @@
     },
     {
       "code": "W_DURATION_ADJUSTED",
-      "message": "目标 6s 超过厂商上限 5s，已截断为 5s"
-    },
-    {
-      "code": "W_PUBLIC_URL_MISSING",
-      "message": "1 张参考图缺少 public_url；Quota-Flow 生成前需要补公网 https URL"
+      "message": "目标 6s 不在支持列表 5/10，已调整为最接近的 5s"
     }
   ],
   "blockers": [],
-  "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
-  "short_revision": "9bb2cfb6449f",
-  "compiled_at": "2026-10-31T14:08:15Z",
-  "variant_sha256": "8606e404858b19a98d244292f43509f122228efb78800d52c8ed36d9bb183d54"
+  "context_revision": "9b1c685fec55813dcb96a4d8a729d833df77d5476ad7cdd029267f1cbf5b2e31",
+  "short_revision": "9b1c685fec55",
+  "compiled_at": "2026-10-31T14:56:04Z",
+  "variant_sha256": "cd6d489d5ff21b8efe832f226f8d9f1409bc5ac2aef8fb23d5bc92357c68946b"
 }

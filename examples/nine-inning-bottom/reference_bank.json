@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "notes": "参考图唯一索引。asset_id 只能在这里定义；角色卡、时间线、编译结果都引用 asset_id，不允许各模型各维护一套路径。status: draft（占位） / approved（可用） / locked（量产锁定）。public_url 供 Quota-Flow 的 API 型厂商使用，必须是公网 https。",
+  "notes": "参考图唯一索引。asset_id 只能在这里定义；角色卡、时间线、编译结果都引用 asset_id，不允许各模型各维护一套路径。status: draft（占位） / approved（可用） / locked（量产锁定）。public_url 是可选字段，仅供 http_api 的 URL 模式使用，必须是公网 https。",
   "root": "refs",
   "assets": [
     {

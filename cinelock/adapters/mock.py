@@ -6,9 +6,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from ..context import ProjectContext
-from ..jobs import outputs_dir
-from .common import AdapterOutcome, decode_output, file_output, tail, tool_path
+from .common import AdapterOutcome, AdapterRequest, decode_output, file_output, tail, tool_path
 
 FONT_CANDIDATES = (
     "C:/Windows/Fonts/msyhbd.ttc",
@@ -192,11 +190,13 @@ def _probe(root: Path, rel: str) -> Dict[str, Any]:
     return out
 
 
-def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: bool = False) -> AdapterOutcome:
+def run(request: AdapterRequest) -> AdapterOutcome:
+    variant = request.variant
+    job_id = request.job_id
     width, height = _resolution(variant)
     duration = float(variant.get("duration_sec") or 5)
     fps = int(variant.get("fps") or 24)
-    out_dir = outputs_dir(ctx)
+    out_dir = request.output_dir
     slate_path = out_dir / ("%s.slate.png" % job_id)
     video_path = out_dir / ("%s.mp4" % job_id)
     slate_rel = "outputs/%s.slate.png" % job_id
@@ -216,7 +216,7 @@ def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: b
         "requested": {"duration_sec": duration, "width": width, "height": height, "fps": fps},
     }
 
-    if dry_run:
+    if request.dry_run:
         plan = [
             "绘制占位底板 %s" % slate_rel,
             "用 ffmpeg 编码 %.1fs / %dx%d / %dfps 占位视频 → %s" % (duration, width, height, fps, video_rel),
@@ -242,7 +242,7 @@ def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: b
         )
 
     try:
-        proc = subprocess.run(command, cwd=str(ctx.root), capture_output=True, timeout=180)
+        proc = subprocess.run(command, cwd=str(request.project_root), capture_output=True, timeout=180)
     except Exception as exc:
         return AdapterOutcome(
             status="failed",
@@ -263,10 +263,10 @@ def run(ctx: ProjectContext, variant: Dict[str, Any], job_id: str, *, dry_run: b
             error="ffmpeg 编码失败（exit=%s）" % proc.returncode,
         )
 
-    probe = _probe(ctx.root, video_rel)
+    probe = _probe(request.project_root, video_rel)
     outputs = [
-        file_output(slate_path, "slate", ctx.root),
-        file_output(video_path, "video", ctx.root, **probe),
+        file_output(slate_path, "slate", request.project_root),
+        file_output(video_path, "video", request.project_root, **probe),
     ]
     meta["probe"] = probe
     return AdapterOutcome(

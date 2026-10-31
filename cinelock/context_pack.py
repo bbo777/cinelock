@@ -15,7 +15,6 @@ PACK_SCHEMA_VERSION = "1.0"
 STATUS_LABELS = {
     "ready": "可执行",
     "warning": "可执行（有告警）",
-    "needs_public_url": "待补公网 URL",
     "not_ready": "未就绪",
     "blocked": "阻断",
 }
@@ -43,10 +42,6 @@ def variant_status(variant: Dict[str, Any]) -> str:
         return "blocked"
     dispatch = variant.get("dispatch") or {}
     if not dispatch.get("ready"):
-        if dispatch.get("requires_public_urls") and (
-            dispatch.get("missing_public_urls") or dispatch.get("non_https_public_urls")
-        ):
-            return "needs_public_url"
         return "not_ready"
     if variant.get("warnings"):
         return "warning"
@@ -112,8 +107,10 @@ def _provider_entries(ctx: ProjectContext, provider_ids: List[str]) -> List[Dict
                 "id": pid,
                 "order": order,
                 "display_name": profile.get("display_name"),
-                "kind": profile.get("kind"),
-                "cli_provider_id": profile.get("cli_provider_id"),
+                "adapter": profile.get("adapter"),
+                "preset": profile.get("preset"),
+                "enabled": bool(profile.get("enabled", True)),
+                "experimental": bool(profile.get("experimental")),
                 "modes": list(profile.get("modes") or []),
                 "max_refs": profile.get("max_refs"),
                 "durations": list(profile.get("durations") or []),
@@ -305,7 +302,7 @@ def render_markdown(ctx: ProjectContext, pack: Dict[str, Any]) -> str:
 
     lines.append("## 厂商能力")
     lines.append("")
-    lines.append("| 厂商 | 名称 | 类型 | 支持模式 | 参考上限 | 支持时长 | 负向词 |")
+    lines.append("| 厂商 | 名称 | 适配器 | 支持模式 | 参考上限 | 支持时长 | 负向词 |")
     lines.append("| --- | --- | --- | --- | --- | --- | --- |")
     for provider in pack.get("providers") or []:
         lines.append(
@@ -313,7 +310,7 @@ def render_markdown(ctx: ProjectContext, pack: Dict[str, Any]) -> str:
             % (
                 _md(provider.get("id")),
                 _md(provider.get("display_name")),
-                _md(provider.get("kind")),
+                _md(provider.get("adapter")),
                 _md(" / ".join(provider.get("modes") or [])),
                 _md(provider.get("max_refs")),
                 _md(" / ".join(str(x) for x in provider.get("durations") or [])),
@@ -401,9 +398,9 @@ def render_markdown(ctx: ProjectContext, pack: Dict[str, Any]) -> str:
     lines.append("")
     lines.append("- 共享输入与参考图顺序能显著降低漂移，但不能在数学意义上保证同一张脸；高风险特写建议加首尾帧或人工 QC。")
     lines.append("- 单图模式只能放一张身份锚点；多角色镜头中其余角色只能靠提示词描述。")
-    lines.append("- Quota-Flow 适配器要求参考图是公网 https URL；`public_url` 为空时真实生成会被拒绝，mock 与 handoff 不受影响。")
+    lines.append("- ComfyUI 与官方 HTTP API 适配器按工作流/平台配置执行；未配置本地服务或 API Key 时会明确失败，不会伪造成功。")
     lines.append("- 参考图状态仍为 `draft` 时只适合演练；正式生产前应改为 `approved` 或 `locked`。")
-    lines.append("- 本包只负责共享上下文与执行参数，不包含厂商登录态、Cookie 或 API Key。")
+    lines.append("- 本包只负责共享上下文与执行参数，不包含 Cookie、API Key 或账号登录态；密钥只从环境变量读取。")
     lines.append("")
     return "\n".join(lines)
 

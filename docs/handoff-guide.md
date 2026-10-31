@@ -47,8 +47,9 @@ python studio.py handoff --shot E01-004
 ```
 
 - `build` 必须是最新的。上下文变了但包没重建，`handoff` 会基于旧包导出，后续 `import` 会被拒绝。
-- `handoff` 会生成一条任务记录，并把包写到 `exports/handoff/<job_id>/`。
+- `handoff` 会生成一条任务记录，并把包写到 `exports/handoff/<job_id>/`；加 `--zip` 会同时打包成 `<job_id>.zip`。
 - 终端会打印任务 ID 和导出路径；也可以运行 `python studio.py jobs --limit 5` 查看。
+- 在 MCP 客户端里，可以让 Agent 直接调用 `cinelock_handoff_export`（`format` 选 `zip` 或 `folder`），例如“把 E01-004 的交接包导出成 zip”。
 
 想先看会导出什么、不写文件：
 
@@ -73,7 +74,8 @@ python studio.py handoff --shot E01-004 --dry-run
 
 - **Midjourney**：图像生成，不直接产出视频。适合先用 `prompt.txt` + `refs/` 生成/挑选关键帧，再把关键帧交给视频模型。不要把它当成视频模型回传。
 - **可灵 / 即梦 / Runway**：支持图生视频；多参考、首尾帧和时长上限各家不同。能多图就按顺序多图，只能单图就只用第 1 张身份锚点。
-- **Quota-Flow（qwenwan / yuanbao）**：CLI 0.1.0 只支持单图首帧，适合链路验证，不适合作为多参考一致性基线。
+- **ComfyUI**：本地或远程工作流，支持多参考与首尾帧；前提是你已经有一张能跑视频的显卡，并把节点图导出为 API 格式。
+- **可灵 / Runway 官方 API**：CineLock 内置预设，可直接提交并轮询；官方接口的参考上限分别是 2 张和 1 张，单图路径一致性最弱。
 
 > 原则：**身份锚点永远第 1 张，顺序不要改。** 参考图顺序本身就是一致性约束的一部分。
 

@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import sys
+import threading
 import unittest
+import zipfile
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
 
 from support import TempProjectCase
-from cinelock.adapters import quota_flow
 from cinelock.context_pack import get_variant
 from cinelock.dispatch import DispatchError, execute, execute_many
 from cinelock.jobs import ledger_path, list_jobs, load_job
@@ -79,81 +80,136 @@ class DispatchTest(TempProjectCase):
         self.assertEqual(len(manifest["references"]), 3)
         self.assertEqual(manifest["references"][0]["role"], "identity")
 
-    def test_unready_quota_flow_job_is_blocked_before_any_vendor_call(self) -> None:
-        job = execute(self.ctx, "E01-001", "qwenwan", dry_run=False, pack=self.pack)
+    def test_handoff_can_bundle_a_zip(self) -> None:
+        job = execute(
+            self.ctx,
+            "E01-001",
+            "handoff",
+            dry_run=False,
+            pack=self.pack,
+            options={"bundle": "zip"},
+        )
+        self.assertEqual(job["status"], "succeeded", job.get("error"))
+        bundle = next(item for item in job["outputs"] if item["kind"] == "zip")
+        zip_path = self.ctx.root / bundle["path"]
+        self.assertTrue(zip_path.is_file())
+        self.assertGreater(bundle["bytes"], 0)
 
-        self.assertEqual(job["status"], "blocked")
-        self.assertIn("public_url", job["error"])
+        with zipfile.ZipFile(zip_path) as archive:
+            names = archive.namelist()
+        self.assertTrue(any(name.endswith("/manifest.json") for name in names))
+        self.assertTrue(any("/refs/" in name for name in names))
+
+    def test_comfyui_dry_run_returns_a_plan_without_network(self) -> None:
+        job = execute(self.ctx, "E01-001", "comfyui", dry_run=True, pack=self.pack)
+
+        self.assertEqual(job["status"], "dry_run", job.get("error"))
+        self.assertTrue(job["plan"])
         self.assertEqual(job["outputs"], [])
+        self.assertEqual(job["adapter_meta"]["base_url"], "http://127.0.0.1:8188")
+        self.assertTrue(job["adapter_meta"]["workflow_sha256"])
 
-    def _fake_cli(self, payload: dict) -> str:
-        script = self.project_dir / "fake_quota_flow.py"
-        source = "import json\nDATA = %r\nprint(json.dumps(DATA, ensure_ascii=True))\n" % payload
-        script.write_text(source, encoding="utf-8")
-        return str(script)
+    def test_comfyui_missing_workflow_fails_clearly(self) -> None:
+        job = execute(
+            self.ctx,
+            "E01-001",
+            "comfyui",
+            dry_run=False,
+            pack=self.pack,
+            options={"workflow": "missing-workflow.json"},
+        )
+        self.assertEqual(job["status"], "failed")
+        self.assertIn("工作流不存在", job["error"])
 
-    def _ready_variant(self, provider_id: str = "qwenwan") -> dict:
-        variant = json.loads(json.dumps(get_variant(self.pack, "E01-001", "qwenwan")))
-        variant["dispatch"] = {
-            "adapter": "quota_flow",
-            "quota_flow_provider": provider_id,
-            "quota_flow_mode": "img2video",
-            "requires_public_urls": True,
-            "image_urls": ["https://example.com/linye_front_v01.png"],
-            "missing_public_urls": [],
-            "non_https_public_urls": [],
-            "ready": True,
-            "block_reasons": [],
-        }
-        return variant
+    def test_comfyui_generation_uploads_submits_polls_and_downloads(self) -> None:
+        submitted = {}
 
-    def test_cli_dry_run_is_recorded_as_dry_run_not_success(self) -> None:
-        payload = {
-            "ok": True,
-            "rounds": 0,
-            "attempts": [{"providerId": "qwenwan", "ok": True}],
-            "result": {
-                "ok": True,
-                "providerId": "qwenwan",
-                "traceId": "qwen-dryrun-123",
-                "videoUrl": "https://example.com/qwen-dryrun/img2video.mp4",
-                "quotaUsed": 1,
-                "raw": {"warning": "~/.quota-flow/qwen-auth.json 未配置，已降级为 dry-run。"},
-            },
-        }
-        script = self._fake_cli(payload)
-        with patch.object(quota_flow, "_resolve_cli", return_value=([sys.executable, script], [])):
-            outcome = quota_flow.run(self.ctx, self._ready_variant(), "JOB_TEST_DRY")
+        class Handler(BaseHTTPRequestHandler):
+            def _json(self, payload) -> None:
+                data = json.dumps(payload).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
 
-        self.assertEqual(outcome.status, "dry_run")
-        self.assertEqual({item["kind"] for item in outcome.outputs}, {"quota_flow_json"})
-        joined = " ".join(outcome.warnings)
-        self.assertIn("未生成真实视频", joined)
-        self.assertIn("仍可能扣减本地额度", joined)
-        self.assertIsNone(outcome.error)
+            def do_POST(self) -> None:
+                length = int(self.headers.get("Content-Length") or 0)
+                body = self.rfile.read(length)
+                if self.path.startswith("/upload/image"):
+                    self._json({"name": "cinelock-ref.png", "subfolder": "cinelock", "type": "input"})
+                elif self.path.startswith("/prompt"):
+                    submitted.update(json.loads(body.decode("utf-8")))
+                    self._json({"prompt_id": "p1"})
+                else:
+                    self._json({})
 
-    def test_cli_provider_substitution_is_rejected(self) -> None:
-        payload = {
-            "ok": True,
-            "rounds": 0,
-            "attempts": [{"providerId": "qwenwan", "ok": True}],
-            "result": {
-                "ok": True,
-                "providerId": "qwenwan",
-                "traceId": "qwen-dryrun-456",
-                "videoUrl": "https://example.com/qwen-dryrun/img2video.mp4",
-                "quotaUsed": 1,
-                "raw": {"warning": "dry-run"},
-            },
-        }
-        script = self._fake_cli(payload)
-        with patch.dict(os.environ, {"CINELOCK_QF_ALLOW_PROVIDER_SWITCH": ""}):
-            with patch.object(quota_flow, "_resolve_cli", return_value=([sys.executable, script], [])):
-                outcome = quota_flow.run(self.ctx, self._ready_variant("yuanbao"), "JOB_TEST_SWAP")
+            def do_GET(self) -> None:
+                if self.path.startswith("/history/p1"):
+                    self._json(
+                        {
+                            "p1": {
+                                "status": {"status_str": "success", "completed": True},
+                                "outputs": {
+                                    "7": {
+                                        "gifs": [
+                                            {
+                                                "filename": "cinelock_E01-001.mp4",
+                                                "subfolder": "",
+                                                "type": "output",
+                                            }
+                                        ]
+                                    }
+                                },
+                            }
+                        }
+                    )
+                elif self.path.startswith("/view"):
+                    data = b"not-a-real-mp4"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "video/mp4")
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                else:
+                    self._json({})
 
-        self.assertEqual(outcome.status, "failed")
-        self.assertIn("厂商不一致", outcome.error)
-        self.assertEqual({item["kind"] for item in outcome.outputs}, {"quota_flow_json"})
+            def log_message(self, *args) -> None:
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+
+        base_url = "http://127.0.0.1:%d" % server.server_address[1]
+        job = execute(
+            self.ctx,
+            "E01-001",
+            "comfyui",
+            dry_run=False,
+            pack=self.pack,
+            options={"base_url": base_url, "timeout_sec": 20, "poll_interval_sec": 0.01},
+        )
+
+        self.assertEqual(job["status"], "succeeded", job.get("error"))
+        self.assertEqual(job["adapter_meta"]["prompt_id"], "p1")
+        self.assertEqual(job["adapter_meta"]["base_url"], base_url)
+        videos = [item for item in job["outputs"] if item["kind"] == "video"]
+        self.assertEqual(len(videos), 1)
+        self.assertTrue((self.ctx.root / videos[0]["path"]).is_file())
+        self.assertTrue(videos[0]["sha256"])
+        self.assertTrue(any("不是可解析视频" in item for item in job["warnings"]))
+        self.assertNotIn("__CINELOCK_", json.dumps(submitted.get("prompt") or {}))
+
+    def test_official_api_without_credentials_fails_clearly(self) -> None:
+        with patch.dict(os.environ, {"KLING_ACCESS_KEY": "", "KLING_SECRET_KEY": ""}):
+            job = execute(self.ctx, "E01-001", "official_kling", dry_run=False, pack=self.pack)
+
+        self.assertEqual(job["status"], "failed")
+        self.assertIn("KLING_ACCESS_KEY", job["error"])
+        self.assertEqual(job["outputs"], [])
 
     def test_stale_pack_is_rejected(self) -> None:
         from cinelock.util import read_json, write_json

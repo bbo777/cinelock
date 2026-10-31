@@ -4,11 +4,11 @@
 
 - 项目：`nine-inning-bottom`
 - 集：`E01` — 九局下半 · 占位样片
-- 上下文版本：`9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008`
-- 短版本：`9bb2cfb6449f`
-- 生成时间：2026-10-31T14:08:15Z
-- 规模：5 个镜头 / 4 个厂商 / 20 个变体
-- 校验：0 错误，11 警告
+- 上下文版本：`9b1c685fec55813dcb96a4d8a729d833df77d5476ad7cdd029267f1cbf5b2e31`
+- 短版本：`9b1c685fec55`
+- 生成时间：2026-10-31T14:56:04Z
+- 规模：5 个镜头 / 5 个厂商 / 25 个变体
+- 校验：0 错误，10 警告
 
 ## 唯一输入原则
 
@@ -18,12 +18,13 @@
 
 ## 厂商能力
 
-| 厂商 | 名称 | 类型 | 支持模式 | 参考上限 | 支持时长 | 负向词 |
+| 厂商 | 名称 | 适配器 | 支持模式 | 参考上限 | 支持时长 | 负向词 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `mock` | Mock（本地演练） | mock | text2video / img2video / multi_ref / first_last | 10 | 3 / 4 / 5 / 6 / 8 / 10 | 是 |
-| `qwenwan` | 千问·通义万相 | quota_flow_webview | text2video / img2video | 1 | 5 | 否 |
-| `yuanbao` | 腾讯元宝·混元 | quota_flow_webview | text2video / img2video | 1 | 5 | 否 |
-| `handoff` | 手工交接包（任意模型） | handoff | text2video / img2video / multi_ref / first_last | 10 | 3 / 4 / 5 / 6 / 8 / 10 | 是 |
+| `mock` | Mock（本地占位视频） | mock | text2video / img2video / multi_ref / first_last | 10 | 3 / 4 / 5 / 6 / 8 / 10 | 是 |
+| `handoff` | Handoff（手工交接包） | handoff | text2video / img2video / multi_ref / first_last | 10 | 3 / 4 / 5 / 6 / 8 / 10 | 是 |
+| `comfyui` | ComfyUI（本地/远程工作流） | comfyui | text2video / img2video / multi_ref / first_last | 10 | 3 / 4 / 5 / 6 / 8 / 10 | 是 |
+| `official_kling` | 可灵官方 API（实验） | http_api | text2video / img2video / first_last | 2 | 5 / 10 | 是 |
+| `official_runway` | Runway 官方 API（实验） | http_api | text2video / img2video | 1 | 5 / 10 | 否 |
 
 ## 参考图库
 
@@ -53,25 +54,30 @@
 | 镜头 | 厂商 | 模式 | 时长 | 参考 | 首参考 | 提示词 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `E01-001` | `mock` | `multi_ref` | 5s | 3 | `REF_LINYE_FRONT_V01` | `67d88807d64f` | 可执行 |
-| `E01-001` | `qwenwan` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `4864bea67d91` | 待补公网 URL |
-| `E01-001` | `yuanbao` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `beccb5d9bc22` | 待补公网 URL |
 | `E01-001` | `handoff` | `multi_ref` | 5s | 3 | `REF_LINYE_FRONT_V01` | `67d88807d64f` | 可执行 |
+| `E01-001` | `comfyui` | `multi_ref` | 5s | 3 | `REF_LINYE_FRONT_V01` | `67d88807d64f` | 可执行 |
+| `E01-001` | `official_kling` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `ef433705ee31` | 可执行（有告警） |
+| `E01-001` | `official_runway` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `beccb5d9bc22` | 可执行（有告警） |
 | `E01-002` | `mock` | `multi_ref` | 6s | 5 | `REF_LINYE_FRONT_V01` | `4c5e3523d5a2` | 可执行 |
-| `E01-002` | `qwenwan` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `4f6f46ba353e` | 待补公网 URL |
-| `E01-002` | `yuanbao` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `fbd369f75514` | 待补公网 URL |
 | `E01-002` | `handoff` | `multi_ref` | 6s | 5 | `REF_LINYE_FRONT_V01` | `4c5e3523d5a2` | 可执行 |
+| `E01-002` | `comfyui` | `multi_ref` | 6s | 5 | `REF_LINYE_FRONT_V01` | `4c5e3523d5a2` | 可执行 |
+| `E01-002` | `official_kling` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `0c1bcab7fb5c` | 可执行（有告警） |
+| `E01-002` | `official_runway` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `fbd369f75514` | 可执行（有告警） |
 | `E01-003` | `mock` | `multi_ref` | 8s | 5 | `REF_LINYE_FRONT_V01` | `d384fb269328` | 可执行（有告警） |
-| `E01-003` | `qwenwan` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `0f355a417053` | 待补公网 URL |
-| `E01-003` | `yuanbao` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `e17ec57d25f7` | 待补公网 URL |
 | `E01-003` | `handoff` | `multi_ref` | 8s | 5 | `REF_LINYE_FRONT_V01` | `d384fb269328` | 可执行（有告警） |
+| `E01-003` | `comfyui` | `multi_ref` | 8s | 5 | `REF_LINYE_FRONT_V01` | `d384fb269328` | 可执行（有告警） |
+| `E01-003` | `official_kling` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `cf5ce62da965` | 可执行（有告警） |
+| `E01-003` | `official_runway` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `e17ec57d25f7` | 可执行（有告警） |
 | `E01-004` | `mock` | `multi_ref` | 5s | 5 | `REF_LINYE_FRONT_V01` | `774c474761d3` | 可执行 |
-| `E01-004` | `qwenwan` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `27ae678aa1ce` | 待补公网 URL |
-| `E01-004` | `yuanbao` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `fd83569865db` | 待补公网 URL |
 | `E01-004` | `handoff` | `multi_ref` | 5s | 5 | `REF_LINYE_FRONT_V01` | `774c474761d3` | 可执行 |
+| `E01-004` | `comfyui` | `multi_ref` | 5s | 5 | `REF_LINYE_FRONT_V01` | `774c474761d3` | 可执行 |
+| `E01-004` | `official_kling` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `4ce9e90cb8c9` | 可执行（有告警） |
+| `E01-004` | `official_runway` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `fd83569865db` | 可执行（有告警） |
 | `E01-005` | `mock` | `multi_ref` | 8s | 5 | `REF_LINYE_FRONT_V01` | `d4b4cf0b844d` | 可执行 |
-| `E01-005` | `qwenwan` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `3e134a51c6a4` | 待补公网 URL |
-| `E01-005` | `yuanbao` | `img2video` | 5s | 1 | `REF_LINYE_FRONT_V01` | `bf541cd3a155` | 待补公网 URL |
 | `E01-005` | `handoff` | `multi_ref` | 8s | 5 | `REF_LINYE_FRONT_V01` | `d4b4cf0b844d` | 可执行 |
+| `E01-005` | `comfyui` | `multi_ref` | 8s | 5 | `REF_LINYE_FRONT_V01` | `d4b4cf0b844d` | 可执行 |
+| `E01-005` | `official_kling` | `img2video` | 10s | 1 | `REF_LINYE_FRONT_V01` | `4203e7e37422` | 可执行（有告警） |
+| `E01-005` | `official_runway` | `img2video` | 10s | 1 | `REF_LINYE_FRONT_V01` | `bf541cd3a155` | 可执行（有告警） |
 
 ## 目录
 
@@ -89,6 +95,6 @@ context/
 
 - 共享输入与参考图顺序能显著降低漂移，但不能在数学意义上保证同一张脸；高风险特写建议加首尾帧或人工 QC。
 - 单图模式只能放一张身份锚点；多角色镜头中其余角色只能靠提示词描述。
-- Quota-Flow 适配器要求参考图是公网 https URL；`public_url` 为空时真实生成会被拒绝，mock 与 handoff 不受影响。
+- ComfyUI 与官方 HTTP API 适配器按工作流/平台配置执行；未配置本地服务或 API Key 时会明确失败，不会伪造成功。
 - 参考图状态仍为 `draft` 时只适合演练；正式生产前应改为 `approved` 或 `locked`。
-- 本包只负责共享上下文与执行参数，不包含厂商登录态、Cookie 或 API Key。
+- 本包只负责共享上下文与执行参数，不包含 Cookie、API Key 或账号登录态；密钥只从环境变量读取。

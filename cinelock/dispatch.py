@@ -3,10 +3,10 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, List, Optional
 
-from .adapters import mock, handoff, quota_flow
-from .adapters.common import AdapterOutcome, tail
+from .adapters import AdapterNotFound, get_adapter
+from .adapters.common import AdapterRequest, tail
 from .context import ProjectContext
-from .context_pack import PackError, get_variant, load_pack, pack_is_current
+from .context_pack import PackError, get_variant, load_pack, pack_is_current, pack_path
 from .jobs import create_job, update_job
 
 
@@ -14,49 +14,33 @@ class DispatchError(Exception):
     pass
 
 
-def _adapter_outcome(
-    adapter: str,
+def _build_request(
     ctx: ProjectContext,
     variant: Dict[str, Any],
     job_id: str,
+    *,
     dry_run: bool,
-) -> AdapterOutcome:
-    if adapter == "mock":
-        return mock.run(ctx, variant, job_id, dry_run=dry_run)
-    if adapter == "handoff":
-        return handoff.run(ctx, variant, job_id, dry_run=dry_run)
-    if adapter == "quota_flow":
-        return quota_flow.run(ctx, variant, job_id, dry_run=dry_run)
-    raise DispatchError("未知适配器：%s" % adapter)
+    options: Optional[Dict[str, Any]],
+) -> AdapterRequest:
+    current_pack = pack_path(ctx)
+    return AdapterRequest.from_context(
+        ctx,
+        variant,
+        job_id,
+        context_pack_path=current_pack if current_pack.is_file() else None,
+        options=options,
+        dry_run=dry_run,
+    )
 
 
-def execute(
+def execute_variant(
     ctx: ProjectContext,
-    shot_id: str,
-    provider_id: str,
+    variant: Dict[str, Any],
     *,
     dry_run: bool = False,
-    pack: Optional[Dict[str, Any]] = None,
+    options: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    if pack is None:
-        try:
-            pack = load_pack(ctx)
-        except PackError as exc:
-            raise DispatchError(str(exc))
-        if pack is None:
-            raise DispatchError("还没有 Context Pack；先运行 build 再执行")
-    if not pack_is_current(ctx, pack):
-        raise DispatchError(
-            "上下文已变化：当前修订 %s，包内修订 %s。先重新 build，避免把旧提示词发给新上下文。"
-            % (ctx.context_revision()[:12], str(pack.get("short_revision") or "?"))
-        )
-    variant = get_variant(pack, shot_id, provider_id)
-    if variant is None:
-        raise DispatchError(
-            "Context Pack 中没有 %s × %s 的编译结果；检查 provider 是否参与本次 build" % (shot_id, provider_id)
-        )
-
-    adapter = str((variant.get("dispatch") or {}).get("adapter") or "manual")
+    adapter = str((variant.get("dispatch") or {}).get("adapter") or "mock")
     job = create_job(ctx, variant, dry_run=dry_run, adapter=adapter)
 
     blockers = variant.get("blockers") or []
@@ -69,10 +53,17 @@ def execute(
         update_job(ctx, job, status="blocked", error="；".join(str(x) for x in reasons), message="前置条件未满足")
         return job
 
+    try:
+        module = get_adapter(adapter)
+    except AdapterNotFound as exc:
+        update_job(ctx, job, status="blocked", error=str(exc), message="适配器未注册")
+        return job
+
     update_job(ctx, job, status="running", message="开始执行 %s" % adapter)
     started = time.monotonic()
     try:
-        outcome = _adapter_outcome(adapter, ctx, variant, str(job["job_id"]), dry_run)
+        request = _build_request(ctx, variant, str(job["job_id"]), dry_run=dry_run, options=options)
+        outcome = module.run(request)
     except Exception as exc:
         update_job(
             ctx,
@@ -113,6 +104,35 @@ def execute(
     return job
 
 
+def execute(
+    ctx: ProjectContext,
+    shot_id: str,
+    provider_id: str,
+    *,
+    dry_run: bool = False,
+    pack: Optional[Dict[str, Any]] = None,
+    options: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    if pack is None:
+        try:
+            pack = load_pack(ctx)
+        except PackError as exc:
+            raise DispatchError(str(exc))
+        if pack is None:
+            raise DispatchError("还没有 Context Pack；先运行 build 再执行")
+    if not pack_is_current(ctx, pack):
+        raise DispatchError(
+            "上下文已变化：当前修订 %s，包内修订 %s。先重新 build，避免把旧提示词发给新上下文。"
+            % (ctx.context_revision()[:12], str(pack.get("short_revision") or "?"))
+        )
+    variant = get_variant(pack, shot_id, provider_id)
+    if variant is None:
+        raise DispatchError(
+            "Context Pack 中没有 %s × %s 的编译结果；检查 provider 是否参与本次 build" % (shot_id, provider_id)
+        )
+    return execute_variant(ctx, variant, dry_run=dry_run, options=options)
+
+
 def execute_many(
     ctx: ProjectContext,
     *,
@@ -121,6 +141,7 @@ def execute_many(
     dry_run: bool = False,
     stop_on_error: bool = False,
     pack: Optional[Dict[str, Any]] = None,
+    options: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     if pack is None:
         try:
@@ -148,13 +169,7 @@ def execute_many(
 
     jobs = []
     for variant in selected:
-        job = execute(
-            ctx,
-            str(variant.get("shot_id")),
-            str(variant.get("provider_id")),
-            dry_run=dry_run,
-            pack=pack,
-        )
+        job = execute_variant(ctx, variant, dry_run=dry_run, options=options)
         jobs.append(job)
         if stop_on_error and job.get("status") in ("failed", "blocked"):
             break

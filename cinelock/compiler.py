@@ -558,14 +558,16 @@ def provider_profile(ctx: ProjectContext, provider_id: str) -> Dict[str, Any]:
     return profile
 
 
+KNOWN_ADAPTERS = ("mock", "handoff", "comfyui", "http_api")
+
+
 def dispatch_adapter(profile: Dict[str, Any]) -> str:
-    kind = str(profile.get("kind") or "")
-    if kind == "mock":
-        return "mock"
-    if kind == "handoff":
-        return "handoff"
-    if kind.startswith("quota_flow"):
-        return "quota_flow"
+    adapter = str(profile.get("adapter") or "")
+    if adapter in KNOWN_ADAPTERS:
+        return adapter
+    legacy_kind = str(profile.get("kind") or "")
+    if legacy_kind in ("mock", "handoff"):
+        return legacy_kind
     return "manual"
 
 
@@ -693,6 +695,18 @@ def build_prompt(
     return prompt, negative_prompt, inline_avoid, mode_instruction
 
 
+def _required_env(profile: Dict[str, Any]) -> List[str]:
+    names = []
+    for key in ("api_key_env", "access_key_env", "secret_key_env"):
+        value = profile.get(key)
+        if isinstance(value, str) and value.strip():
+            names.append(value.strip())
+    for name in profile.get("requires_env") or []:
+        if isinstance(name, str) and name.strip() and name.strip() not in names:
+            names.append(name.strip())
+    return names
+
+
 def _build_dispatch(
     profile: Dict[str, Any],
     mode: Optional[str],
@@ -701,68 +715,28 @@ def _build_dispatch(
     warnings: List[Dict[str, str]],
 ) -> Dict[str, Any]:
     adapter = dispatch_adapter(profile)
-    requires_urls = adapter == "quota_flow"
+    if adapter == "manual":
+        _issue(
+            blockers,
+            "B_ADAPTER_UNKNOWN",
+            "厂商 %s 没有可用的 adapter 字段；支持 %s" % (profile.get("display_name") or "?", " / ".join(KNOWN_ADAPTERS)),
+        )
     if profile.get("enabled", True) is False:
         _issue(
             blockers,
             "B_PROVIDER_DISABLED",
-            "厂商 %s 已停用：当前 Quota-Flow CLI 未注册；可改用 handoff 导出后手工上传"
-            % (profile.get("display_name") or profile.get("cli_provider_id") or "?"),
-        )
-    if requires_urls and profile.get("cli_available", True) is False:
-        _issue(
-            blockers,
-            "B_CLI_PROVIDER_UNAVAILABLE",
-            "已安装的 Quota-Flow CLI 没有注册厂商 %s；请改用 handoff" % (profile.get("cli_provider_id") or "?"),
-        )
-    cli_mode = None
-    if requires_urls:
-        cli_mode = (profile.get("cli_mode_map") or {}).get(mode or "")
-        if not cli_mode:
-            _issue(blockers, "B_CLI_MODE_MISSING", "Quota-Flow 适配器缺少模式映射：%s" % mode)
-
-    missing_urls = []
-    invalid_urls = []
-    image_urls = []
-    if requires_urls:
-        for item in refs:
-            url = item.get("public_url")
-            if not url:
-                missing_urls.append(item.get("asset_id"))
-            elif not str(url).startswith("https://"):
-                invalid_urls.append(item.get("asset_id"))
-            else:
-                image_urls.append(url)
-
-    if requires_urls and missing_urls:
-        _issue(
-            warnings,
-            "W_PUBLIC_URL_MISSING",
-            "%d 张参考图缺少 public_url；Quota-Flow 生成前需要补公网 https URL" % len(missing_urls),
-        )
-    if requires_urls and invalid_urls:
-        _issue(
-            warnings,
-            "W_PUBLIC_URL_NOT_HTTPS",
-            "%d 张参考图的 public_url 不是 https；Quota-Flow 厂商通常要求 https" % len(invalid_urls),
+            "厂商 %s 已停用；把 providers.json 中 enabled 改为 true 后再编译" % (profile.get("display_name") or "?"),
         )
 
+    public_urls = [str(ref.get("public_url")) for ref in refs if ref.get("public_url")]
     block_reasons: List[str] = [item["message"] for item in blockers]
-    if requires_urls and missing_urls:
-        block_reasons.append("缺少 public_url：%s" % ", ".join(str(x) for x in missing_urls))
-    if requires_urls and invalid_urls:
-        block_reasons.append("public_url 不是 https：%s" % ", ".join(str(x) for x in invalid_urls))
-    if requires_urls and not cli_mode:
-        block_reasons.append("缺少 Quota-Flow CLI 模式映射")
-
     return {
         "adapter": adapter,
-        "quota_flow_provider": profile.get("cli_provider_id") if requires_urls else None,
-        "quota_flow_mode": cli_mode,
-        "requires_public_urls": requires_urls,
-        "image_urls": image_urls,
-        "missing_public_urls": missing_urls,
-        "non_https_public_urls": invalid_urls,
+        "endpoint": profile.get("base_url"),
+        "preset": profile.get("preset"),
+        "requires_env": _required_env(profile),
+        "experimental": bool(profile.get("experimental")),
+        "public_urls": public_urls,
         "ready": not block_reasons,
         "block_reasons": block_reasons,
     }
@@ -848,16 +822,27 @@ def compile_shot(
         "provider": {
             "id": provider_id,
             "display_name": profile.get("display_name"),
-            "kind": profile.get("kind"),
-            "cli_provider_id": profile.get("cli_provider_id"),
-            "cli_available": bool(profile.get("cli_available", True)),
+            "adapter": dispatch_adapter(profile),
+            "preset": profile.get("preset"),
             "enabled": bool(profile.get("enabled", True)),
+            "experimental": bool(profile.get("experimental")),
             "modes": list(profile.get("modes") or []),
             "max_refs": profile.get("max_refs"),
             "durations": list(profile.get("durations") or []),
             "ref_semantics": profile.get("ref_semantics"),
             "supports_negative_prompt": bool(profile.get("supports_negative_prompt")),
             "supports_seed": bool(profile.get("supports_seed")),
+            "base_url": profile.get("base_url"),
+            "workflow": profile.get("workflow"),
+            "model": profile.get("model"),
+            "image_input": profile.get("image_input"),
+            "timeout_sec": profile.get("timeout_sec"),
+            "poll_interval_sec": profile.get("poll_interval_sec"),
+            "api_key_env": profile.get("api_key_env"),
+            "access_key_env": profile.get("access_key_env"),
+            "secret_key_env": profile.get("secret_key_env"),
+            "ratio_map": profile.get("ratio_map"),
+            "send_seed": profile.get("send_seed"),
         },
         "mode": mode,
         "mode_label": MODE_LABELS.get(mode or "", mode),

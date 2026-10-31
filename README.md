@@ -1,20 +1,16 @@
 # CineLock
 
-**AI 视频工业化的连续性基础设施。**
+**一个平台无关的 AI 视频上下文治理引擎（Context Governance Engine for AI Video）。**
 
 ## Why I built this（我的开发动机）
 
-> 我只有一台普通的 ASUS VivoBook 轻薄本，没有独立显卡，也没有多余的钱去购买动辄几百上千的 AI 视频生成额度。
->
-> 但我又想拍一部连续、不穿帮的 AI 漫剧。
->
-> 买不起算力，逼得我只能去抠底层逻辑。于是，我写了 CineLock（原 NineFlow）：一套能用最少的算力（甚至免费额度）、最严格的上下文锁（哈希锁）、最极致的状态机，保证你每一次抽卡都不浪费的上下文治理引擎。
+> 我只有一台 ASUS VivoBook，买不起算力，只能写极致的代码。CineLock 不负责帮你生成视频，它负责帮你守住上下文。你可以用它导出交接包（Handoff）去白嫖网页端额度，也可以接入 ComfyUI 跑本地模型。我完成了最难的架构，剩下的生成交给你自己。
 
 这台轻薄本能做文字处理、JSON 编译、状态机校验和 mock 渲染；它做不了的，是替你烧掉几百上千块去抽一条能用的镜头。所以 CineLock 把“钱”留在生成那一步，把“不穿帮”尽量前移到编译那一步。
 
-> CineLock（原 NineFlow）是一个 AI 视频上下文治理引擎。本仓库自带《九局下半》作为演示项目。
+CineLock（原 NineFlow）是一个与具体模型、具体平台无关的上下文治理引擎。本仓库自带《九局下半》作为公开演示项目。它不绑定任何一家厂商的 CLI，也不要求你安装 Node.js：`pip install -r requirements.txt` 之后，纯 Python 环境就能跑通整条链路。
 
-![tests](https://img.shields.io/badge/tests-67%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-76%20passing-brightgreen)
 ![python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![mcp](https://img.shields.io/badge/MCP-stdio%20server-6f42c1)
@@ -27,14 +23,31 @@ CineLock 不试图消除概率性，而是把不确定性约束进一条可锁�
 
 ---
 
+## 它不生成视频，它守住上下文
+
+CineLock 把“生成”抽象成一个统一协议：引擎只负责把编译好的 Context Pack、提示词、参考图路径、时长和 seed 交给适配器；适配器负责调用本地服务或远端 API，拿到视频后交还给引擎记录哈希。
+
+内置四种执行方式，全部是开放接口，不依赖某个私有 CLI：
+
+| 适配器 | 做什么 | 适合谁 |
+| --- | --- | --- |
+| `mock` | 本地绘制占位底板并用 ffmpeg 编码，100% 可跑 | 验证全链路、写测试、演示审计 |
+| `handoff` | 导出完整的上下文包（JSON + 图片 + 提示词 + manifest），不联网 | 拿去 Midjourney / 可灵 / 即梦 / 任意网页端手动生成 |
+| `comfyui` | 通过 ComfyUI HTTP API 上传参考图、提交工作流、轮询结果、下载产物 | 有本地显卡或远程 ComfyUI 的人 |
+| `http_api` | 通用 HTTP 适配器，内置可灵 / Runway 预设，也可配置任意厂商 | 有官方 API Key 的开发者 |
+
+**CineLock 不代理额度、不共享账号、不绕过任何平台限制。** 它只做输入侧的一致性治理与证据链审计。
+
+---
+
 ## 📦 Handoff：把算力众包出去
 
-**我没有钱生成全片，但我用轻薄本把整部《九局下半》的上下文、时间线、连续状态完美打包了。你可以拿着我的包，去用你自己的模型生成，然后把结果传回来看审计结果。**
+**我没有钱生成全片，但我用一台轻薄本把《九局下半》的上下文、时间线、连续状态完整打包了。你可以拿着我的包，用你自己的模型额度生成，再把结果传回来审计。**
 
 Handoff 不是“下载一段提示词”，而是一份可验证的交接协议：
 
 - 包里有按优先级排好的参考图副本（附 SHA-256）、正向/负向提示词、`manifest.json` 和操作说明；
-- manifest 固定 `context_revision` 与 `prompt_sha256`，外部队列的结果必须对得上，不能拿旧包冒充新包；
+- manifest 固定 `context_revision` 与 `prompt_sha256`，外部结果必须对得上，不能拿旧包冒充新包；
 - 你在 Midjourney 生成关键帧，或去可灵 / 即梦 / Runway 生成视频，再把文件传回来；
 - `studio.py import` 把外部视频登记进任务账本，**同一套 13 项审计**立刻能核验“文件没被动过、仍然绑在同一个上下文修订上”。
 
@@ -46,6 +59,9 @@ Handoff 不是“下载一段提示词”，而是一份可验证的交接协议
 ```bash
 # 1. 导出交接包（本机，不花一分钱算力）
 python studio.py handoff --shot E01-004
+
+# 需要直接发一个压缩包：
+python studio.py handoff --shot E01-004 --zip
 
 # 2. 把 refs/ 里的图按 manifest 顺序喂给模型，粘贴 prompt.txt
 #    生成后把视频文件发回来
@@ -84,22 +100,171 @@ python studio.py audit --id <job_id>
 
 ---
 
+## 快速开始（纯 Python，无 Node）
+
+### 环境
+
+- Python 3.8+（已在 3.8.10 验证）。
+- Pillow：mock 占位底板需要。
+- ffmpeg / ffprobe：mock 视频编码、九宫格抽帧、所有本地下载产物的媒体校验需要。缺少 ffprobe 时仍能下载视频，但任务会带“未做媒体完整性校验”的警告；缺少 ffmpeg 时无法出片或生成九宫格。
+- **不需要 Node.js，也不需要安装任何厂商 CLI。** `mock` / `handoff` 开箱即用；`comfyui` 连你自己启动的 ComfyUI；`http_api` 直接调官方 HTTP 接口。
+
+```bash
+pip install -r requirements.txt
+python studio.py validate
+```
+
+### 三条命令跑通
+
+```bash
+python studio.py validate      # 校验角色卡、参考图库、时间线
+python studio.py build         # 编译全部厂商，生成 Context Pack
+python studio.py serve         # 打开看板 http://127.0.0.1:8787/
+```
+
+默认读取 `examples/nine-inning-bottom/`；也可以用 `--project-dir` 指向你自己的项目。`serve` 默认自动打开浏览器，加 `--no-open` 可关闭。
+
+### CLI 常用命令
+
+```bash
+# 查看修订、包状态、厂商能力
+python studio.py status
+python studio.py providers
+
+# 查看某个镜头 × 厂商的编译结果与完整提示词
+python studio.py compile --shot E01-004 --provider comfyui --prompt
+
+# 只演练，不调用任何服务
+python studio.py run --shot E01-004 --provider mock --dry-run
+python studio.py run --shot E01-004 --provider comfyui --dry-run
+
+# 生成本地占位视频（需要 ffmpeg + Pillow）
+python studio.py run --shot E01-004 --provider mock
+
+# 参考图被替换后，按实际文件修复记录哈希（不会改变 context_revision）
+python studio.py refresh-hashes
+
+# 只预览某个厂商，不写入、不覆盖共享 Context Pack
+python studio.py build --provider mock
+
+# 从任务或本地视频抽 9 帧拼成 3×3 九宫格
+python studio.py contact-sheet --job <job_id>
+python studio.py contact-sheet --video outputs/<job_id>.mp4 --out outputs/custom.png
+
+# 导出交接包（文件夹，或文件夹 + ZIP）
+python studio.py handoff --shot E01-004
+python studio.py handoff --shot E01-004 --zip
+
+# 提交 ComfyUI 工作流（先用 dry-run 看计划）
+python studio.py run --shot E01-004 --provider comfyui --dry-run
+python studio.py run --shot E01-004 --provider comfyui \
+  --base-url http://127.0.0.1:8188 \
+  --workflow config/comfyui/my-workflow.json
+
+# 调用官方 API（凭证只从环境变量读取）
+python studio.py run --shot E01-001 --provider official_kling --dry-run
+python studio.py run --shot E01-001 --provider official_runway --dry-run
+
+# 把外部模型生成、且属于同一修订的视频登记进任务账本
+python studio.py import --shot E01-004 --video ~/Downloads/kling_E01-004.mp4 \
+  --model "Kling 2.5" --revision <manifest 修订> --prompt-hash <manifest 提示词哈希>
+
+# 任务账本
+python studio.py jobs --limit 20
+python studio.py job --id <job_id> --prompt
+
+# 连续性审计（退出码：0 证据链通过 / 1 警告 / 2 失败）
+python studio.py audit --id <job_id>
+python studio.py audit --id <job_id> --json
+
+# 以 MCP stdio Server 启动（Claude Desktop / WorkBuddy）
+python studio.py --project-dir examples/nine-inning-bottom mcp
+```
+
+全局参数放在子命令之前，例如：
+
+```bash
+python studio.py --project-dir examples/nine-inning-bottom --config-dir config status
+```
+
+---
+
+## MCP / API 接入
+
+CineLock 内置一个零依赖的 MCP stdio Server。Claude Desktop、WorkBuddy 或其他 MCP 客户端可以直接调用同一套哈希锁、状态机、编译与审计能力，也可以让 Agent 导出交接包或提交 ComfyUI 工作流。
+
+### 9 行配置
+
+把下面这段加入 Claude Desktop 的 `claude_desktop_config.json`（Windows 路径：`%APPDATA%\Claude\claude_desktop_config.json`），保存后重启客户端：
+
+```json
+{
+  "mcpServers": {"cinelock": {
+    "command": "python",
+    "args": ["C:/path/to/cinelock/studio.py", "--project-dir",
+             "C:/path/to/cinelock/examples/nine-inning-bottom", "mcp"],
+    "env": {"PYTHONIOENCODING": "utf-8"}
+  }}
+}
+```
+
+WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；如果文件里已有其他 server，把 `cinelock` 这一项合并进 `mcpServers` 即可。
+
+把 `C:/path/to/cinelock` 换成仓库实际路径。若客户端找不到 `python`，把 `"command"` 换成 `where python` 返回的绝对路径。JSON 里的 Windows 路径请使用 `/`，或把 `\` 转义为 `\\`。
+
+### 可用工具（10 个）
+
+| 工具 | 作用 | 写入 | 联网 |
+| --- | --- | --- | --- |
+| `cinelock_status` | 当前修订、镜头、厂商、Pack 状态与校验摘要 | 否 | 否 |
+| `cinelock_validate` | 校验角色卡、参考图哈希、时间线与厂商配置 | 否 | 否 |
+| `cinelock_variant` | 读取某个镜头 × `provider_id` 的提示词、参考图与连续性快照 | 否（仅内存编译） | 否 |
+| `cinelock_audit` | 按 `job_id` 运行 13 项证据链审计 | 否 | 否 |
+| `cinelock_jobs` | 列出任务账本，可按镜头/厂商过滤 | 否 | 否 |
+| `cinelock_build` | 编译 Context Pack；默认只预览，`write=true` 才全量写入 | 显式传 `write=true` | 否 |
+| `cinelock_contact_sheet` | 从任务视频生成 3×3 抽帧九宫格 | 写入 `outputs/` | 否 |
+| `cinelock_handoff_export` | 按 `shot_id` 导出交接包，`format` 可选 `zip` / `folder` | 写入 `exports/` | 否 |
+| `cinelock_generate_comfyui` | 按 `shot_id` 提交 ComfyUI 工作流并轮询结果 | 写入 `jobs/`、`outputs/` | 是（只连指定 ComfyUI） |
+| `cinelock_generate_http` | 按 `shot_id` + `provider_id` 调用官方 HTTP API | 写入 `jobs/`、`outputs/` | 是（只连厂商 API） |
+
+公共工具名已统一为 `cinelock_*`。旧的 `nineflow_*` 名称保留为兼容别名，但文档、看板和新配置一律使用 CineLock。
+
+配置完成后，可以直接在客户端里说：
+
+- “帮我审计一下最近生成的 E01-003 任务，并导出一份 handoff 包。”
+- “把 E01-004 的交接包导出成 zip。”
+- “用本地 ComfyUI 生成 E01-004，地址是 `http://127.0.0.1:8188`，先 dry-run 给我看计划。”
+- “用 `official_runway` 生成 E01-001，先 dry-run。”
+- “把 E01-004 × comfyui 的完整提示词和参考图顺序给我。”
+
+### 安全边界
+
+- 只使用 stdio，不监听端口；只读工具不发起网络请求。
+- `cinelock_generate_comfyui` / `cinelock_generate_http` 只有在你显式调用时才联网，且只连接参数或 `providers.json` 指定的地址。
+- 项目目录在进程启动时固定，工具不能遍历到任意路径。
+- `cinelock_build` 默认只预览，写共享包必须显式传 `write=true`，且不允许和 `provider_id` 同时使用。
+- 厂商密钥只从环境变量读取，不会出现在配置、日志、任务记录或 MCP 返回值里。
+- MCP 客户端拥有当前用户的本地文件权限，只连接可信客户端。
+
+---
+
 ## 🎬 实验项目：《九局下半》（因算力受限，目前停留在关键帧与上下文编译阶段）
 
 《九局下半》不是仓库的主体，而是 CineLock 的**公开测试用例**：一个刻意保留真实复杂度的实验项目，用来验证“多镜头、多厂商、角色状态持续演化”时，上下文层能不能兜住。
 
-这套系统是跑通的：角色状态机建好了，5 个镜头的服装、伤情、道具、表情与场景都能按时间线重放；mock 出片、handoff 导出、外部导入、ffprobe 校验、九宫格抽帧、13 项审计都已验证。
+这套系统是跑通的：角色状态机建好了，5 个镜头的服装、伤情、道具、表情与场景都能按时间线重放；mock 出片、handoff 导出、ComfyUI 适配器、外部导入、ffprobe 校验、九宫格抽帧、13 项审计都已验证。
 
-但我没钱买算力把成片跑出来。时间线目前是 **5 个镜头 / 31 秒**，我原本想把它扩到 2 分半；现实是连这 31 秒的真实模型出片都还没跑完。这不妨碍 CineLock 成为一个好引擎——它已经把“该生成什么、每个模型该看到什么、生成后怎么验”固定下来了。
+但我没钱买算力把成片跑出来。时间线目前是 **5 个镜头 / 31 秒**，我原本想把它扩到 2 分半；现实是连这 31 秒的真实模型出片都还没跑完。**引擎已具备完整的上下文管理能力，但因作者算力受限，目前仅保留了关键帧、参考图与 mock 占位视频，欢迎社区使用 Handoff 包接力生成。**
 
 **目前仓库附带的是 mock 产出的占位视频，以及一份可以直接交给别人去生成的真实 handoff 包。没有成片，也不会把占位视频说成成片。**
 
 ### 当前状态
 
-- 系统底层引擎、上下文锁、状态机、外部导入与审计闭环已完成，**67 项测试通过**；
-- **5 个镜头、4 个启用厂商、20 个变体、56 次参考图引用**共享同一个修订；
-- mock 出片、handoff 包、外部视频导入、ffprobe 校验、九宫格抽帧、13 项审计均已跑通；
-- 真实厂商出片仍受登录态、公网参考图 URL 与**预算**限制；
+- 系统底层引擎、上下文锁、状态机、外部导入与审计闭环已完成，**76 项测试通过**；
+- **5 个镜头、5 个厂商、25 个变体、79 次参考图引用**共享同一个修订；
+- 25 个变体中 12 个无告警、13 个带告警；告警来自两件事：E01-003 的 7 秒被本地厂商就近调整为 8 秒；两家官方 API 走单图首帧路径，除身份锚点外的伤情与服装细节退化为提示词描述，Runway 还需把负向词内联。所有告警都记录在变体里，**不是隐藏失败**；
+- mock 出片、handoff 包、ComfyUI 适配器、外部视频导入、ffprobe 校验、九宫格抽帧、13 项审计均已跑通；
+- 真实 ComfyUI 工作流与可灵 / Runway 官方 API 仍属实验性，详见下文；
 - 仓库不会把 mock 占位视频说成成片，也不会把外部导入说成“由 CineLock 生成”。
 
 ### 它到底在演示什么
@@ -144,7 +309,7 @@ E01-005  home_injured  打击区 · 黄昏    伤情与撕裂袖口延续到收�
 
 ![CineLock external import drawer](docs/images/showcase-external-import.png)
 
-> 拿着 handoff 包去 Midjourney / 可灵 / 即梦生成后，用 `studio.py import` 把文件绑回当前修订与提示词哈希。看板会标出“外部导入”、声明修订、媒体探测结果和审计边界。图中的外部文件是 mock 占位视频，仅用于演示导入流程。
+> 拿着 handoff 包去 Midjourney / 可灵 / 即梦生成后，用 `studio.py import` 把文件绑回当前修订与提示词哈希。看板会标出“外部导入”、声明修订、媒体探测结果和审计边界。图中的外部文件是 mock 占位视频，仅用于演示导入流程；截图摄于上一修订，界面字段与当前版本一致。
 
 ### 参考图库
 
@@ -163,84 +328,7 @@ examples/nine-inning-bottom/
   refs/                 占位参考图
 ```
 
-E01-004 的真实手工交接包（5 张参考图 + 正向/负向提示词 + manifest）在 [`docs/showcase/handoff-E01-004/`](docs/showcase/handoff-E01-004/)；其余镜头与厂商的编译结果在 `context/shots/` 下。
-
----
-
-## 快速开始
-
-### 环境
-
-- Python 3.8+（已在 3.8.10 验证）。
-- Pillow：mock 占位底板需要。
-- ffmpeg / ffprobe：mock 视频编码、视频抽帧九宫格、Quota-Flow 下载产物校验需要。缺少 ffprobe 时仍可下载视频，但任务会带“未做媒体完整性校验”的警告；缺少 ffmpeg 时无法出片或生成九宫格。
-- Node.js ≥ 20 + Quota-Flow CLI：仅真实厂商执行需要。本机已安装 CLI 0.1.0（自带 Node 22，CineLock 可自动发现，不依赖 PATH 里的默认 Node）。
-
-```bash
-pip install -r requirements.txt
-python studio.py validate
-```
-
-### 三条命令跑通
-
-```bash
-python studio.py validate      # 校验角色卡、参考图库、时间线
-python studio.py build         # 编译全部厂商，生成 Context Pack
-python studio.py serve         # 打开看板 http://127.0.0.1:8787/
-```
-
-默认读取 `examples/nine-inning-bottom/`；也可以用 `--project-dir` 指向你自己的项目。`serve` 默认自动打开浏览器，加 `--no-open` 可关闭。
-
-### CLI 常用命令
-
-```bash
-# 查看修订、包状态、厂商能力
-python studio.py status
-python studio.py providers
-
-# 查看某个镜头 × 厂商的编译结果与完整提示词
-python studio.py compile --shot E01-004 --provider mock --prompt
-
-# 只演练，不调用任何厂商
-python studio.py run --shot E01-004 --provider mock --dry-run
-
-# 生成本地占位视频（需要 ffmpeg + Pillow）
-python studio.py run --shot E01-004 --provider mock
-
-# 参考图被替换后，按实际文件修复记录哈希（不会改变 context_revision）
-python studio.py refresh-hashes
-
-# 只预览某个厂商，不写入、不覆盖共享 Context Pack
-python studio.py build --provider qwenwan
-
-# 从任务或本地视频抽 9 帧拼成 3×3 九宫格
-python studio.py contact-sheet --job <job_id>
-python studio.py contact-sheet --video outputs/<job_id>.mp4 --out outputs/custom.png
-
-# 导出任意模型可用的手工交接包
-python studio.py handoff --shot E01-004
-
-# 把外部模型生成、且属于同一修订的视频登记进任务账本
-python studio.py import --shot E01-004 --video ~/Downloads/kling_E01-004.mp4 \
-  --model "Kling 2.5" --revision <manifest 修订> --prompt-hash <manifest 提示词哈希>
-
-# 任务账本
-python studio.py jobs --limit 20
-python studio.py job --id <job_id> --prompt
-
-# 连续性审计（退出码：0 证据链通过 / 1 警告 / 2 失败）
-python studio.py audit --id <job_id>
-python studio.py audit --id <job_id> --json
-
-# 以 MCP stdio Server 启动（Claude Desktop / WorkBuddy）
-python studio.py --project-dir examples/nine-inning-bottom mcp
-```
-
-全局参数放在子命令之前，例如：
-
-```bash
-python studio.py --project-dir examples/nine-inning-bottom --config-dir config status
-```
+历史手工交接包样例在 [`docs/showcase/handoff-E01-004/`](docs/showcase/handoff-E01-004/)，仅用于展示包结构；其中的修订号属于导出时的历史版本，当前应以 `build` 后生成的包为准。其余镜头与厂商的编译结果在 `context/shots/` 下。
 
 ---
 
@@ -262,7 +350,7 @@ python studio.py --project-dir examples/nine-inning-bottom --config-dir config s
 
 `audit` 重算修订锁、重放 `state_delta`、核验参考图和产物哈希，并用同一修订重编译比对，回答“这份记录还是不是当初那一份”。
 
-> **边界**：CineLock 保证的是**输入侧连续性与可追溯性**，不是输出侧像素级一致。模型仍可能忽略约束；单参考厂商（qwenwan / yuanbao）只适合链路验证，不作为一致性基线。输出侧的身份/服装核验仍需补。
+> **边界**：CineLock 保证的是**输入侧连续性与可追溯性**，不是输出侧像素级一致。模型仍可能忽略约束；单参考路径（官方 Runway、Kling 的首帧模式）只适合链路验证，不作为一致性基线。输出侧的身份/服装核验仍需补。
 
 ### 它回答三个问题
 
@@ -278,7 +366,7 @@ python studio.py --project-dir examples/nine-inning-bottom --config-dir config s
         ▼
 context_revision ── build ──▶ Context Pack（所有镜头 × 厂商共享同一修订）
         │                              │
-        │                              ├─ mock / handoff / Quota-Flow 执行
+        │                              ├─ mock / handoff / comfyui / http_api 执行
         │                              ▼
         └──────────────▶ jobs/<job_id>.json（快照 + source_hashes + 产物哈希）
                                        │
@@ -288,114 +376,130 @@ context_revision ── build ──▶ Context Pack（所有镜头 × 厂商共
 
 ---
 
-## 已验证的能力
+## Provider 矩阵
 
-- `cd tests && python -m unittest discover -s . -t . -v`：**67 项测试通过**。
-- mock 适配器：真实生成 5s / 1920×1080 / 24fps 的 H.264 占位视频（Pillow 底板 + ffmpeg），并用 ffprobe 回读时长、分辨率与编码。
-- media 模块：ffprobe 校验本地视频；ffmpeg 均匀抽 9 帧拼成 1920×1080 的 3×3 九宫格。
-- handoff 适配器：导出参考图、正向/负向提示词、manifest、README 的完整手工包。
-- 外部导入：`import` 把外部模型生成的视频绑定到当前修订与提示词哈希，复制进 `outputs/`、记录 SHA-256 与 ffprobe 元数据，再走同一套 13 项审计；修订或提示词对不上会直接拒绝。
-- Quota-Flow CLI 0.1.0：已安装并可被发现（自动使用自带 Node 22）；`generate` 子进程、JSON 解析、任务账本已跑通。
-- Quota-Flow 适配器：能识别 CLI 的 dry-run 回包（不会误记为出片）、拒绝厂商静默替换、检查 Node/公网 URL 前置条件；下载后的视频必须通过 ffprobe 校验才算成功（没有 ffprobe 时保留文件但给出警告）。
-- 连续性审计：任务保存上下文快照与引擎指纹；CLI 与看板都能逐项核验 13 项检查——修订锁、快照完整性、状态机重放、提示词、参考图、产物哈希、同修订重编译等，并能识别旧任务与历史修订。审计结果分为**证据链状态**与**任务状态**两层，不再把“任务失败”误写成“存证失败”。
-- 哈希闭环：`refresh-hashes` 可把被替换参考图的记录哈希修复到实际文件；全量 `build` 才会写共享包，`build --provider` 只做预览。
-- 本地看板：时间线、连续性快照、厂商矩阵、变体抽屉、任务账本、审计抽屉、视频预览、任务抽屉内一键生成抽帧九宫格、UI 内发起 mock 生成；新增明暗主题切换、顶部证据链环与上下文流水线示意。桌面与 390px 窄屏均已验收。
-- 安全校验：Host/Origin 校验、POST 自定义头、文件根目录白名单、Range 206、CSP。
+默认 build 包含 5 家。`mock` 与 `handoff` 是稳定核心；`comfyui` 与两家官方 API 标注为实验性。
 
-**未验证 / 当前限制**：真实 Quota-Flow 厂商出片。CLI 已安装，但本机没有 qwenwan / yuanbao 登录凭据，占位参考图也没有公网 `https` URL；适配器会在执行前如实阻断，或在无凭据时把 CLI 的 dry-run 记为 `dry_run`。此外，已安装的 CLI 0.1.0 只注册了 `qwenwan`、`yuanbao` 两家（且都只支持单图首帧），README 中的 Dola / 百炼 / 智谱 / 豆包 / 火山 / TokenHub 尚未在该 CLI 中落地。
+| ID | 适配器 | 支持模式 | 参考上限 | 可选时长 | 状态 |
+| --- | --- | --- | --- | --- | --- |
+| `mock` | `mock` | text2video / img2video / multi_ref / first_last | 10 | 3/4/5/6/8/10s | 稳定 |
+| `handoff` | `handoff` | text2video / img2video / multi_ref / first_last | 10 | 3/4/5/6/8/10s | 稳定 |
+| `comfyui` | `comfyui` | text2video / img2video / multi_ref / first_last | 10 | 3/4/5/6/8/10s | 实验性 |
+| `official_kling` | `http_api`（Kling 预设） | text2video / img2video / first_last | 2 | 5/10s | 实验性 |
+| `official_runway` | `http_api`（Runway 预设） | text2video / img2video | 1 | 5/10s | 实验性 |
 
----
+所有厂商的提示词都从同一份 Context Pack 编译；`max_refs` 较小的厂商会截断参考图，并在变体与审计里记录 `dropped_references`。**不假装各家输入相等。**
 
-## MCP / API 接入
+### 模式选择
 
-CineLock 内置一个零依赖的 MCP stdio Server。Claude Desktop、WorkBuddy 或其他 MCP 客户端可以直接调用同一套哈希锁、状态机与审计能力，不需要额外服务或 API Key。
+按以下顺序自动选择：
 
-### 10 行配置
+1. 有首帧和尾帧，且厂商支持 `first_last` → 首尾帧；
+2. 厂商只支持单图，且存在首帧关键帧 → 单图首帧；
+3. 厂商支持多参考 → 多参考图；
+4. 只有单图能力 → 拿身份锚点做单图首帧，并给出降级警告；
+5. 其余 → 文生视频。
 
-把下面这段加入 Claude Desktop 的 `claude_desktop_config.json`（Windows 路径：`%APPDATA%\Claude\claude_desktop_config.json`），保存后重启客户端：
+### 时长适配
 
-```json
-{
-  "mcpServers": {
-    "cinelock": {
-      "command": "python",
-      "args": ["C:/path/to/cinelock/studio.py", "--project-dir",
-               "C:/path/to/cinelock/examples/nine-inning-bottom", "mcp"],
-      "env": {"PYTHONIOENCODING": "utf-8"}
-    }
-  }
-}
-```
+每个变体记录：
 
-WorkBuddy 使用同一段配置，写入 `%USERPROFILE%\.workbuddy\mcp.json`；如果文件里已有其他 server，把 `cinelock` 这一项合并进 `mcpServers` 即可。
+- `requested_duration_sec`：时间线要求的时长；
+- `duration_sec`：该厂商实际可选的最接近值；
+- `duration_choice`：`exact` / `nearest` / `truncated` / `extended`。
 
-把 `C:/path/to/cinelock` 换成仓库实际路径。若客户端找不到 `python`，把 `"command"` 换成 `where python` 返回的绝对路径。JSON 里的 Windows 路径请使用 `/`，或把 `\` 转义为 `\\`。
-
-### 可用工具
-
-| 工具 | 作用 | 是否写入 |
-| --- | --- | --- |
-| `cinelock_status` | 当前修订、镜头、厂商、Pack 状态与校验摘要 | 否 |
-| `cinelock_validate` | 校验角色卡、参考图哈希、时间线与厂商配置 | 否 |
-| `cinelock_variant` | 读取某个镜头 × 厂商的提示词、参考图与连续性快照 | 否（仅在内存编译） |
-| `cinelock_audit` | 按 `job_id` 运行 13 项证据链审计 | 否 |
-| `cinelock_jobs` | 列出任务账本，可按镜头/厂商过滤 | 否 |
-| `cinelock_build` | 编译 Context Pack；默认只预览，`write=true` 才全量写入 | 显式调用时 |
-| `cinelock_contact_sheet` | 从任务视频生成 3×3 抽帧九宫格 | 写入 `outputs/` |
-
-配置完成后，可以直接在客户端里说：
-
-- “用 cinelock_status 看一下当前修订和 5 个镜头。”
-- “把 E01-004 × mock 的完整提示词和参考图给我。”
-- “审计 JOB_...，分别告诉我证据链结论和任务状态。”
-
-### 安全边界
-
-- 只使用 stdio，不监听端口，不发起网络请求；
-- 项目目录在进程启动时固定，工具不能遍历到任意路径；
-- `cinelock_build` 默认只预览，写共享包必须显式传 `write=true`，且不允许和 `provider_id` 同时使用；
-- MCP 客户端拥有当前用户的本地文件权限，只连接可信客户端；
-- Quota-Flow 的登录凭据不会通过 MCP 暴露；MCP 工具不执行真实厂商调用。
+适配器只把厂商支持的时长传给接口；最终运动细节与随机性仍由模型决定。
 
 ---
 
-## 目录
+## 接入 ComfyUI（experimental · 即将支持）
 
-```text
-studio.py                     CLI 入口
-cinelock/
-  context.py                  加载事实源，计算 context_revision
-  validate.py                 结构、引用、连续性、厂商能力校验
-  continuity.py               按镜头顺序应用 state_delta，生成快照
-  compiler.py                 参考图选择、模式选择、提示词与时长适配
-  context_pack.py             打包 context_pack.json / CONTEXT.md / 分镜变体
-  dispatch.py                 新鲜度检查、适配器调度、任务状态机
-  jobs.py                     单个任务 JSON + append-only jobs.jsonl + 上下文存证
-  ingest.py                   外部模型产物导入、修订绑定与媒体探测
-  hashes.py                   参考图记录哈希与实际文件对齐（refresh-hashes）
-  media.py                    ffprobe 探测 + ffmpeg 抽帧九宫格
-  audit.py                    修订锁、快照重放、参考图/产物/重编译核验
-  mcp_server.py               MCP stdio Server（状态 / 编译 / 审计 / 九宫格）
-  adapters/mock.py            占位底板 + ffmpeg 编码
-  adapters/handoff.py         手工交接包
-  adapters/quota_flow.py      Quota-Flow CLI 子进程与结果解析
-  dashboard.py                本地看板 HTTP 服务
-  report.py                   CLI 与看板共用的状态载荷
-  cli.py / environment.py
-config/
-  providers.json              厂商能力矩阵与 Quota-Flow CLI 映射
-  prompt_maps.json            风格、景别、运镜等词表
-web/                          无外部依赖的看板前端
-examples/nine-inning-bottom/  实验项目《九局下半》
-  project.json                项目/风格/画幅/默认策略
-  characters.json             角色卡
-  reference_bank.json         参考图库（本地路径 + 可选 public_url）
-  timeline.json               场景、镜头、连续性 state_delta
-  refs/                       原创几何占位参考图
-  context/                    构建产物（含预构建的 Context Pack）
-  jobs/ outputs/ exports/     任务账本、视频、交接包（运行时生成）
-tests/                        unittest 测试
+`adapters/comfyui.py` 已经实现完整 HTTP 流程：上传参考图 → 替换工作流占位符 → 提交 `/prompt` → 轮询 `/history/{prompt_id}` → 下载 `/view` 产物 → ffprobe 校验 → 记录 SHA-256。
+
+仓库附带一个 API 格式的**工作流骨架** [`config/comfyui/workflow.example.json`](config/comfyui/workflow.example.json)。它只用来验证参数注入和字段接线，**不是可用的运动生成工作流**——请在 ComfyUI 里搭好你自己的 AnimateDiff / SVD / 视频模型节点图，导出 API 格式后替换它。
+
+### 占位符
+
+| 占位符 | 注入内容 |
+| --- | --- |
+| `__CINELOCK_PROMPT__` | 编译后的正向提示词 |
+| `__CINELOCK_NEGATIVE__` | 负向提示词 |
+| `__CINELOCK_SEED__` | 变体 seed |
+| `__CINELOCK_DURATION__` | 请求时长（秒） |
+| `__CINELOCK_FPS__` | 帧率 |
+| `__CINELOCK_WIDTH__` / `__CINELOCK_HEIGHT__` | 分辨率 |
+| `__CINELOCK_ASPECT_RATIO__` | 画幅 |
+| `__CINELOCK_SHOT_ID__` / `__CINELOCK_CONTEXT_REVISION__` | 镜头与修订标识 |
+| `__CINELOCK_REF_N__` / `__CINELOCK_REF_N_SUBFOLDER__` | 第 N 张参考图上传后的文件名与子目录 |
+
+工作流里如果残留未替换的 `__CINELOCK_*__` 占位符，适配器会直接失败，不会把半成品提交给模型。
+
+### 使用
+
+```bash
+# 1. 启动 ComfyUI（默认 http://127.0.0.1:8188）
+# 2. 先看计划
+python studio.py run --shot E01-004 --provider comfyui --dry-run
+
+# 3. 换成你的工作流后执行
+python studio.py run --shot E01-004 --provider comfyui \
+  --base-url http://127.0.0.1:8188 \
+  --workflow config/comfyui/my-workflow.json \
+  --timeout 900
 ```
+
+也可以让 MCP Agent 调用 `cinelock_generate_comfyui`：传入 `shot_id` 和 `base_url`，Agent 会提交参数并轮询结果。
+
+> **诚实标注**：ComfyUI 适配器目前只在测试里对**模拟的 ComfyUI HTTP 服务**跑通过（上传、提交、轮询、下载、ffprobe 校验、占位符清理）。作者没有独立显卡，**尚未在真实 ComfyUI + 真实视频模型上验收**。示例工作流还会用到 `ComfyUI-VideoHelperSuite` 的 `VHS_VideoCombine` 节点，请先安装对应插件。
+
+---
+
+## 接入官方 HTTP API（experimental）
+
+`adapters/http_api.py` 内置两个预设，也支持完全自定义的厂商接口。密钥只从环境变量读取，**不要写进 `providers.json`**。
+
+### 可灵（Kling）
+
+```bash
+# Windows
+set KLING_ACCESS_KEY=your-access-key
+set KLING_SECRET_KEY=your-secret-key
+
+# macOS / Linux
+export KLING_ACCESS_KEY=your-access-key
+export KLING_SECRET_KEY=your-secret-key
+```
+
+- 适配器用 AccessKey/SecretKey 生成短期 JWT（HS256），提交 `/v1/videos/text2video` 或 `/v1/videos/image2video`，再轮询同一路径下的 `/{task_id}`。
+- 默认模型 `kling-v1`，支持首帧与首尾帧，参考上限 2 张，时长 5/10 秒，不支持 seed。
+- 端点与字段可能随官方文档变化；没有凭证时执行会明确失败，不会伪造成功。
+
+### Runway
+
+```bash
+# Windows
+set RUNWAY_API_KEY=your-api-key
+
+# macOS / Linux
+export RUNWAY_API_KEY=your-api-key
+```
+
+- 使用 Bearer Token + `X-Runway-Version: 2024-11-06`，提交 `/v1/text_to_video` 或 `/v1/image_to_video`，轮询 `/v1/tasks/{id}`。
+- 默认模型 `gen3a_turbo`，单图首帧，参考上限 1 张，时长 5/10 秒。
+
+> **诚实标注**：两家官方 API 目前只验证了 dry-run 计划、请求构造与“缺少凭证时明确失败”的路径。作者没有官方 API Key，**没有用真实账号跑通过一次出片**。字段若与官方最新文档不一致，以官方文档为准，欢迎提 PR 修正。
+
+### 自定义厂商
+
+在 `config/providers.json` 里配置 `adapter: "http_api"`，并使用通用字段：
+
+- `submit_url` / `status_url`：提交与轮询地址，`status_url` 支持 `{task_id}`；
+- `payload_template`：用 `{{prompt}}`、`{{first_image}}` 等变量映射你的请求体；
+- `task_id_path` / `status_path` / `video_url_path`：从响应里提取任务 ID、状态和视频地址；
+- `api_key_env` / `auth_header` / `auth_prefix`：声明密钥所在环境变量；
+- `success_values` / `failure_values`：自定义状态词。
+
+通用适配器不会猜测你的接口；配置不全时会在提交前失败。
 
 ---
 
@@ -527,159 +631,99 @@ python studio.py build
 
 ---
 
-## Provider 矩阵
+## 目录
 
-默认 build 只包含已启用的 4 家；未注册厂商保留在 `config/providers.json` 作为规划，显式选择会被编译阶段阻断。
+```text
+studio.py                     CLI 入口
+cinelock/
+  context.py                  加载事实源，计算 context_revision
+  validate.py                 结构、引用、连续性、厂商能力校验
+  continuity.py               按镜头顺序应用 state_delta，生成快照
+  compiler.py                 参考图选择、模式选择、提示词与时长适配
+  context_pack.py             打包 context_pack.json / CONTEXT.md / 分镜变体
+  dispatch.py                 新鲜度检查、适配器调度、任务状态机
+  jobs.py                     单个任务 JSON + append-only jobs.jsonl + 上下文存证
+  ingest.py                   外部模型产物导入、修订绑定与媒体探测
+  hashes.py                   参考图记录哈希与实际文件对齐（refresh-hashes）
+  media.py                    ffprobe 探测 + ffmpeg 抽帧九宫格
+  audit.py                    修订锁、快照重放、参考图/产物/重编译核验
+  mcp_server.py               MCP stdio Server（状态 / 编译 / 审计 / 导出 / 生成）
+  adapters/
+    common.py                 统一 AdapterRequest / AdapterOutcome 协议
+    net.py                    零依赖 HTTP、轮询与 multipart 工具
+    mock.py                   占位底板 + ffmpeg 编码
+    handoff.py                手工交接包（可打包 ZIP）
+    comfyui.py                ComfyUI HTTP API（实验性）
+    http_api.py               通用 HTTP 适配器 + Kling / Runway 预设
+  dashboard.py                本地看板 HTTP 服务
+  report.py                   CLI 与看板共用的状态载荷
+  cli.py / environment.py
+config/
+  providers.json              平台无关厂商能力矩阵
+  prompt_maps.json            风格、景别、运镜等词表
+  comfyui/workflow.example.json  ComfyUI API 格式工作流骨架
+web/                          无外部依赖的看板前端
+examples/nine-inning-bottom/  实验项目《九局下半》
+  project.json                项目/风格/画幅/默认策略
+  characters.json             角色卡
+  reference_bank.json         参考图库（本地路径 + 可选 public_url）
+  timeline.json               场景、镜头、连续性 state_delta
+  refs/                       原创几何占位参考图
+  context/                    构建产物（含预构建的 Context Pack）
+  jobs/ outputs/ exports/     任务账本、视频、交接包（运行时生成，已 gitignore）
+legacy/
+  quota_flow.py               已归档的旧适配器，不参与构建、不被任何代码导入
+tests/                        unittest 测试
+```
 
-### 已启用（参与默认 build）
-
-| ID | 显示名 | 类型 | 支持模式 | 参考上限 | 可选时长 |
-| --- | --- | --- | --- | --- | --- |
-| `mock` | Mock（本地演练） | 本地适配器 | text2video / img2video / multi_ref / first_last | 10 | 3/4/5/6/8/10s |
-| `qwenwan` | 千问·通义万相 | Quota-Flow CLI 0.1.0 | text2video / img2video | 1 | 5s |
-| `yuanbao` | 腾讯元宝·混元 | Quota-Flow CLI 0.1.0 | text2video / img2video | 1 | 5s |
-| `handoff` | 手工交接包（任意模型） | 本地导出 / 外部导入 | text2video / img2video / multi_ref / first_last | 10 | 3/4/5/6/8/10s |
-
-`qwenwan` / `yuanbao` 在 CLI 0.1.0 中只接受单图首帧，所以每个镜头只拿第 1 张身份锚点；其余参考图与状态继续进入提示词。多参考/首尾帧仍可通过 mock 校验或 handoff 导出给其他模型使用。
-
-### 规划中（当前 CLI 未注册，默认停用）
-
-| ID | 显示名 | 规划模式 |
-| --- | --- | --- |
-| `dola` | Dola（Dreamina Seedance） | multi_ref |
-| `bailian` | 阿里云百炼（万相） | text2video / img2video / multi_ref / first_last |
-| `zhipu` | 智谱·清影 / Vidu | text2video / img2video / multi_ref / first_last |
-| `doubao` | 豆包 | text2video / img2video |
-| `volcengine` | 火山方舟（Seedance） | text2video / img2video |
-| `tokenhub` | 腾讯云 TokenHub（混元） | text2video / img2video |
-
-这些厂商已写入能力矩阵并带 `enabled: false` / `cli_available: false`。直接 `compile --provider dola` 会得到 `B_PROVIDER_DISABLED` 与 `B_CLI_PROVIDER_UNAVAILABLE` 阻断，不会把请求静默转给千问。CLI 升级并注册新厂商后，改回 `enabled: true` / `cli_available: true` 并补齐模式映射即可。
-
-### 模式选择
-
-按以下顺序自动选择：
-
-1. 有首帧和尾帧，且厂商支持 `first_last` → 首尾帧；
-2. 厂商只支持单图，且存在首帧关键帧 → 单图首帧；
-3. 厂商支持多参考 → 多参考图；
-4. 只有单图能力 → 拿身份锚点做单图首帧，并给出降级警告；
-5. 其余 → 文生视频。
-
-### 时长适配
-
-每个变体记录：
-
-- `requested_duration_sec`：时间线要求的时长；
-- `duration_sec`：该厂商实际可选的最接近值；
-- `duration_choice`：`exact` / `nearest` / `truncated` / `extended`。
-
-Quota-Flow CLI 本身不允许传时长，因此时长只影响提示词、计划和记录，最终由厂商模型决定。
+`legacy/` 只用于保留历史代码，**不在适配器注册表里，也不会被默认 build 加载**。活动引擎是纯 Python，没有 Node 探测，也没有 CLI 子进程。
 
 ---
 
-## 接入真实 Quota-Flow
+## 已验证的能力
 
-### 1. 安装与发现
+- `python -m unittest discover -s tests -p "test_*.py" -v`：**76 项测试通过**。
+- mock 适配器：真实生成 5s / 1920×1080 / 24fps 的 H.264 占位视频（Pillow 底板 + ffmpeg），并用 ffprobe 回读时长、分辨率与编码。
+- media 模块：ffprobe 校验本地视频；ffmpeg 均匀抽 9 帧拼成 1920×1080 的 3×3 九宫格。
+- handoff 适配器：导出参考图、正向/负向提示词、manifest、README 的完整手工包，可额外打包 ZIP。
+- 外部导入：`import` 把外部模型生成的视频绑定到当前修订与提示词哈希，复制进 `outputs/`、记录 SHA-256 与 ffprobe 元数据，再走同一套 13 项审计；修订或提示词对不上会直接拒绝。
+- ComfyUI 适配器：在测试中的模拟 ComfyUI HTTP 服务上跑通上传 → 提交 → 轮询 → 下载 → ffprobe 校验 → SHA-256 记录；残留占位符会阻断。
+- 官方 API 适配器：dry-run 计划、请求构造、凭证缺失时明确失败；**没有真实账号出片记录**。
+- 连续性审计：任务保存上下文快照与引擎指纹；CLI 与看板都能逐项核验 13 项检查——修订锁、快照完整性、状态机重放、提示词、参考图、产物哈希、同修订重编译等，并能识别旧任务与历史修订。审计结果分为**证据链状态**与**任务状态**两层，不再把“任务失败”误写成“存证失败”。
+- 哈希闭环：`refresh-hashes` 可把被替换参考图的记录哈希修复到实际文件；全量 `build` 才会写共享包，`build --provider` 只做预览。
+- 本地看板：时间线、连续性快照、厂商矩阵、变体抽屉、任务账本、审计抽屉、视频预览、任务抽屉内一键生成抽帧九宫格、UI 内发起 mock 生成；新增明暗主题切换、顶部证据链环与上下文流水线示意。桌面与 390px 窄屏均已验收。
+- MCP Server：10 个工具（状态 / 校验 / 变体 / 审计 / 任务 / 构建 / 九宫格 / 交接导出 / ComfyUI 生成 / HTTP 生成）、`nineflow_*` 兼容别名、stdio 往返、工具错误作为结果返回。
+- 安全校验：Host/Origin 校验、POST 自定义头、文件根目录白名单、Range 206、CSP；纯 Python 引擎无 Node 依赖。
 
-本机已通过 Node 22 的 npm 全局安装 `@quota-flow/cli@0.1.0`，入口类似：
+**未验证 / 当前限制**：
 
-```text
-D:\nvm\nodejs\quota-flow.cmd
-```
+- 真实 ComfyUI + 真实视频模型出片（作者无独立显卡，只有模拟服务测试）。
+- 可灵 / Runway 官方 API 的真实出片（作者无 API Key，只验证了计划与失败路径）。
+- 输出侧视觉连续性（人脸、服装、伤情、道具）仍需人工或视觉模型审片。
 
-CineLock 会依次查找：
+---
 
-1. `QUOTA_FLOW_CLI` 指定的路径；
-2. `PATH` 中的 `quota-flow` / `quota-flow.cmd`；
-3. Windows 常见的 nvm / `%APPDATA%\npm` / `Program Files\nodejs` 全局入口。
-
-找到 npm 的 `.cmd` 后，如果同目录有 `node.exe` 和 `node_modules/@quota-flow/cli/dist/cli.cjs`，CineLock 会直接用自带 Node 执行 JS 入口，绕开 PATH 里的默认 Node 14。也可以显式指定：
-
-```bash
-set QUOTA_FLOW_CLI=D:\nvm\nodejs\quota-flow.cmd
-set QUOTA_FLOW_NODE=D:\nvm\nodejs\node.exe
-```
-
-验证：
-
-```bash
-quota-flow --version
-quota-flow check-quota --json
-python studio.py status
-```
-
-本机实际输出只包含 `qwenwan`、`seedance`、`yuanbao`；其中 `seedance` 额度为 0 且未注册，**可自动调度的只有 qwenwan / yuanbao**。
-
-### 2. 登录凭据
-
-CLI 的 `fetch` 引擎从 `~/.quota-flow/` 读取登录态，CineLock 不读取、不保存、不上传这些文件：
-
-- `qwen-auth.json`：至少包含 `cookie`、`deviceId`、`sessionId`；可选 `reqId`。
-- `yuanbao-auth.json`：至少包含 `cookie`、`agentId`、`conversationId`。
-
-`--engine browser` 在当前 CLI 中只实现了 yuanbao（会打开真实 Edge），qwenwan 仍走静态凭据。登录态由用户自己完成；不要把 Cookie / API Key 写进本仓库。
-
-**注意（CLI 0.1.0 行为）**：缺少上述 JSON 时，`quota-flow generate` 不会报错退出，而是返回 `ok: true` 的 dry-run 结果，并且可能照样扣减本地额度。CineLock 会识别 `traceId` / `raw.warning` 中的 dry-run 标记，把任务记为 `dry_run` 而不是 `succeeded`，同时提示“未生成真实视频”和“可能已扣减额度”。可用 `quota-flow refresh` 重置当日演示额度（`totalSuccessful` 等累计值不会清零）。
-
-### 3. 给参考图补公网 URL
-
-Quota-Flow 只接受公网 `https` 图片。编辑 `reference_bank.json` 每个 asset：
-
-```json
-{
-  "asset_id": "REF_LINYE_FRONT_V01",
-  "path": "refs/characters/linye/linye_front_v01.png",
-  "public_url": "https://your-cdn.example/cinelock/linye_front_v01.png"
-}
-```
-
-然后重新构建：
+## 测试
 
 ```bash
-python studio.py build
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-缺少 `public_url` 或不是 `https` 时，相应变体会显示 `待公网 URL`，真实执行被阻断；dry-run 仍可查看完整命令与提示词。
+覆盖：
 
-### 4. 先演练，再执行
+- 修订稳定性与失效；
+- 连续性状态演化；
+- 参考图上限、身份锚点、模式选择、时长适配、提示词内容与确定性；
+- mock 真实出片、handoff 包与 ZIP、ComfyUI 模拟服务全流程、官方 API 凭证缺失失败、外部视频导入与修订/提示词绑定、旧包拒绝；
+- 默认厂商矩阵、适配器映射、单厂商预览与共享包保护；
+- 审计通过、快照/修订/参考图/产物篡改、历史修订、旧任务降级、任务状态与证据链分层、审计 API 与 CLI；
+- 看板 API、CSRF/Host/Origin、路径穿越、文件 Range、九宫格接口与本地视频前置检查；
+- CLI 的 validate / build / status / compile / run / handoff / jobs / job / audit / refresh-hashes / contact-sheet 全链路；
+- 哈希漂移修复、缺失参考图时拒绝写入、重建清理过期变体文件；
+- ffprobe 探测、3×3 九宫格尺寸与时间戳、坏视频报错；
+- MCP 初始化、10 个工具目录、状态/变体只读、预览不写包、交接导出（ZIP/文件夹）、ComfyUI/HTTP dry-run、兼容别名、stdio 往返。
 
-```bash
-python studio.py run --shot E01-001 --provider qwenwan --dry-run
-python studio.py run --shot E01-001 --provider qwenwan
-```
-
-第一条只生成执行计划，不调用 CLI；第二条才会真正调用。若登录态或公网 URL 缺失，任务会分别记为 `dry_run` / `blocked`。
-
-可用环境变量：
-
-```bash
-# 指向 CLI 入口（当不在 PATH 时）
-set QUOTA_FLOW_CLI=D:\nvm\nodejs\quota-flow.cmd
-
-# 显式指定跑 CLI 的 Node（可选；自动发现失败时使用）
-set QUOTA_FLOW_NODE=D:\nvm\nodejs\node.exe
-
-# 可选 fetch / browser；CLI 0.1.0 的 browser 只实现了 yuanbao
-set CINELOCK_QF_ENGINE=fetch
-
-# 建议保持 0：非 0 时 Quota-Flow 可能切换到其他厂商，破坏逐厂商对比
-set CINELOCK_QF_FALLBACK_ROUNDS=0
-
-# 默认拒绝“请求 A、实际用 B”的静默替换；设为 1 才接受
-set CINELOCK_QF_ALLOW_PROVIDER_SWITCH=0
-
-# 单次执行超时，默认 1800 秒
-set CINELOCK_QF_TIMEOUT_SEC=1800
-```
-
-### 5. 任务账本
-
-每次执行都会写：
-
-- `jobs/<job_id>.json`：完整任务快照；
-- `jobs/jobs.jsonl`：append-only 事件流（queued / running / 终态）。
-
-记录包括修订号、`source_hashes`、连续性快照与快照哈希、引擎指纹、厂商投影、提示词与负向词哈希、参考图快照、模式、时长、seed、命令、输出文件、stdout/stderr 尾部、警告和错误。
+mock 出片与九宫格测试在缺少 ffmpeg / ffprobe / Pillow 时自动跳过。
 
 ---
 
@@ -697,7 +741,7 @@ python studio.py --project-dir projects/my-story serve
 然后按顺序替换：
 
 1. **角色**：编辑 `characters.json`，补 `descriptor`、身份不变量、服装状态、表情参考和负向词。
-2. **参考图**：把真实图片放进 `refs/`，更新 `reference_bank.json` 的 `asset_id`、`path`、`status`；`build` 会自动计算实际哈希并写入包。
+2. **参考图**：把真实图片放进 `refs/`，更新 `reference_bank.json` 的 `asset_id`、`path`、`status`；`build` 会自动计算实际哈希并写入包。`public_url` 是可选字段，仅 `http_api` 的 URL 模式需要，必须是公网 https。
 3. **时间线**：编辑 `timeline.json` 的场景、镜头、台词、音效和 `state_delta`。状态变化只写在这里。
 4. **厂商**：按真实能力修改 `config/providers.json`；项目级覆盖写到 `project.json` 的 `provider_overrides`。
 5. **重建**：`validate && build`。旧包会自动失效，看板显示“上下文已变化”。
@@ -709,6 +753,8 @@ python studio.py --project-dir projects/my-story serve
 《九局下半》的下一阶段不是“再写一个演示”，而是把 5 个镜头真正生成出来，并把输出侧连续性核验补上。欢迎从这些方向参与：
 
 - 用 handoff 包在你熟悉的模型上生成 E01-001 ~ E01-005，回传任务记录与失败样本；
+- 有显卡的人把真实 ComfyUI 工作流跑通，补一份非占位的 workflow 示例；
+- 有官方 API Key 的人验证 Kling / Runway 预设并修正字段；
 - 替换占位参考图，贡献有明确授权的角色/场景资产；
 - 增加输出侧审片：人脸、服装、伤情、道具的视觉核验；
 - 接入新的厂商或 MCP 客户端；
@@ -725,39 +771,14 @@ python studio.py --project-dir projects/my-story serve
 
 ---
 
-## 测试
-
-```bash
-cd tests
-python -m unittest discover -s . -t . -v
-```
-
-覆盖：
-
-- 修订稳定性与失效；
-- 连续性状态演化；
-- 参考图上限、身份锚点、模式选择、时长适配、提示词内容与确定性；
-- mock 真实出片、handoff 包完整性、外部视频导入与修订/提示词绑定、Quota-Flow 前置阻断、旧包拒绝；
-- CLI dry-run 识别、厂商静默替换拒绝、默认厂商矩阵与规划厂商阻断；
-- 审计通过、快照/修订/参考图/产物篡改、历史修订、旧任务降级、任务状态与证据链分层、审计 API 与 CLI；
-- 看板 API、CSRF/Host/Origin、路径穿越、文件 Range、九宫格接口与本地视频前置检查；
-- CLI 的 validate / build / status / compile / run / jobs / job / audit / refresh-hashes / contact-sheet 全链路；
-- 哈希漂移修复、缺失参考图时拒绝写入、部分构建不覆盖共享包、重建清理过期变体文件；
-- ffprobe 探测、3×3 九宫格尺寸与时间戳、坏视频报错；
-- MCP 初始化、工具目录、状态/变体只读、预览不写包、审计与任务账本、stdio 往返。
-
-mock 出片与九宫格测试在缺少 ffmpeg / ffprobe / Pillow 时自动跳过。
-
----
-
 ## 设计边界与一致性限制
 
 - **一致性是概率性的**：同一套参考图与快照能显著降低漂移，但不能保证每个模型像素级一致。
 - 单图厂商丢失几何、表情、伤情参考，只剩身份锚点与文字描述，是最容易漂移的路径。
-- 已安装的 Quota-Flow CLI 0.1.0 只注册 `qwenwan` / `yuanbao`，两家都只有单图首帧；多参考厂商仍需 handoff。
-- CLI 在缺少登录态时会返回 dry-run，并可能扣减本地额度；CineLock 只把它记为 `dry_run`，不会当作成功视频。
-- CLI 对未注册的 `--provider` 会静默回退到千问；CineLock 默认拒绝这种厂商不一致，避免对比结果串台。
-- Quota-Flow CLI 没有时长与 seed 参数；实际时长、运动细节和随机性由厂商决定。
+- 官方 Runway 参考上限 1 张、Kling 2 张，实际走单图首帧；伤情与服装参考会退化为提示词描述。多参考路径（mock / handoff / comfyui）上限 10 张；若超过，会在变体与审计里记录 `dropped_references`，**不假装输入相等**。
+- ComfyUI 适配器是实验性的；示例工作流只是接线骨架，不是可用的运动生成工作流。
+- 可灵 / Runway 预设是实验性的，尚未用真实账号验证；端点与字段可能随官方文档变化。
+- 官方 API 的时长、运动细节和随机性由厂商决定。
 - 首尾帧模式只有在时间线提供 `keyframes.first` / `keyframes.last` 时才会启用；占位数据没有关键帧。
 - 当前没有自动人脸评分、镜头完成度判断、音频/口型、自动重试与人工审片队列。
 - ffprobe 只验证容器、视频流、时长与分辨率；它不能证明画面里的人脸、服装或伤情连续。九宫格是人工审片的辅助视图，不是自动质检。
@@ -772,7 +793,7 @@ mock 出片与九宫格测试在缺少 ffmpeg / ffprobe / Pillow 时自动跳过
 ## 命名与版本
 
 - `CineLock` 是 0.2.0 起的正式名字；`NineFlow` 保留为 0.1.x 的开发代号和历史 tag。
-- Python 包名、CLI、MCP server 与工具名均已统一为 `cinelock` / `cinelock_*`。
+- Python 包名、CLI、MCP server 与工具名均已统一为 `cinelock` / `cinelock_*`；旧 `nineflow_*` 仅作为兼容别名。
 - 旧仓库 URL 会由 GitHub 重定向；如果你在脚本里写死了 `bbo777/nineflow`，建议改成 `bbo777/cinelock`。
 
 ---
@@ -780,10 +801,12 @@ mock 出片与九宫格测试在缺少 ffmpeg / ffprobe / Pillow 时自动跳过
 ## 安全与合规
 
 - 看板默认绑定 `127.0.0.1`，校验 Host/Origin，POST 必须带 `X-CineLock: studio`，文件只能读 `refs/`、`outputs/`、`exports/`，并限制路径穿越。
+- 厂商 API Key / AccessKey / SecretKey 只从环境变量读取，不写入 `providers.json`、任务记录、日志或 MCP 返回值。
 - Context Pack 与 handoff 包只包含提示词、参考图副本和元数据，不包含 Cookie、API Key 或登录态。
 - 公网参考图需要你自行上传并确认访问权限；上传前请检查素材版权、肖像授权与隐私内容。
 - 真实生成时请遵守各厂商服务条款与配额规则。本项目只做连续性编排、调度与审计，不绕过配额、不提供账号共享或风控规避。
 - 角色、剧本、参考图的权利与授权由使用者负责。
+- 本仓库不包含任何第三方 IP 素材；示例中的角色、场景、参考图均为原创占位内容。
 
 ---
 
@@ -795,4 +818,4 @@ CineLock 只做输入侧连续性治理与证据链审计，不对任何模型�
 
 ---
 
-如果你恰好有闲置的模型会员或算力，欢迎来 [Issue #11 · 求大佬赞助算力](https://github.com/bbo777/cinelock/issues/11) 认领一个镜头；如果你也没有预算，欢迎 Star、领取一个工程任务，或者 fork 一份，把《九局下半》的 5 个镜头真正生成出来。**有钱出钱，有力出力，CineLock 把上下文管好。**
+如果你恰好有闲置的模型会员、显卡或算力，欢迎来 [Issue #11 · 求大佬赞助算力](https://github.com/bbo777/cinelock/issues/11) 认领一个镜头；如果你也没有预算，欢迎 Star、领取一个工程任务，或者 fork 一份，把《九局下半》的 5 个镜头真正生成出来。**有钱出钱，有力出力，CineLock 把上下文管好。**

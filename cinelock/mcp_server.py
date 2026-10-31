@@ -17,8 +17,10 @@ from .context_pack import (
     pack_path,
     variant_status,
 )
+from .dispatch import execute_variant
 from .jobs import (
     JobError,
+    exports_dir,
     list_jobs,
     load_job,
     outputs_dir,
@@ -36,7 +38,7 @@ TOOLS: List[Dict[str, Any]] = [
         "name": "cinelock_status",
         "title": "CineLock 项目状态",
         "description": (
-            "读取项目修订、镜头、厂商矩阵、Context Pack 状态和校验摘要。"
+            "读取项目修订、镜头、适配器矩阵、Context Pack 状态和校验摘要。"
             "只读，不写入任何文件。"
         ),
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
@@ -53,14 +55,18 @@ TOOLS: List[Dict[str, Any]] = [
         "name": "cinelock_variant",
         "title": "读取编译后的变体",
         "description": (
-            "按镜头和厂商编译一个变体，返回提示词、负向提示词、参考图、"
-            "连续性快照、警告与阻断项。只在内存中编译，不写入共享 Context Pack。"
+            "按镜头和 provider_id 编译一个变体，返回提示词、负向提示词、参考图、"
+            "连续性快照、警告与阻断项。provider_id 是通用厂商 ID，例如 "
+            "mock / handoff / comfyui / official_kling。只在内存中编译，不写共享包。"
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
                 "shot_id": {"type": "string", "description": "镜头 ID，例如 E01-001"},
-                "provider_id": {"type": "string", "description": "厂商 ID，例如 mock / qwenwan / handoff"},
+                "provider_id": {
+                    "type": "string",
+                    "description": "厂商 ID，例如 mock / handoff / comfyui / official_kling",
+                },
                 "include_prompt": {
                     "type": "boolean",
                     "default": True,
@@ -86,7 +92,7 @@ TOOLS: List[Dict[str, Any]] = [
                 "include_checks": {
                     "type": "boolean",
                     "default": True,
-                    "description": "是否返回 13 项逐项检查结果",
+                    "description": "是否返回逐项检查结果",
                 },
             },
             "required": ["job_id"],
@@ -156,7 +162,123 @@ TOOLS: List[Dict[str, Any]] = [
         },
         "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": False},
     },
+    {
+        "name": "cinelock_handoff_export",
+        "title": "导出交接包",
+        "description": (
+            "按 shot_id 直接生成交接包：prompt.txt、negative.txt、refs/、manifest.json、README.md，"
+            "可打包成 zip 或保留文件夹。不需要 API Key，不调用任何厂商。"
+            "适合把镜头交给 Midjourney、可灵、即梦或社区算力接力。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "shot_id": {"type": "string", "description": "镜头 ID，例如 E01-003"},
+                "format": {
+                    "type": "string",
+                    "enum": ["zip", "folder"],
+                    "default": "zip",
+                    "description": "zip 生成压缩包；folder 只保留目录",
+                },
+                "provider_id": {
+                    "type": "string",
+                    "description": "可选：指定一个 handoff 适配器厂商，默认自动选择",
+                },
+            },
+            "required": ["shot_id"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "cinelock_generate_comfyui",
+        "title": "调用 ComfyUI 生成",
+        "description": (
+            "按 shot_id 编译变体，上传参考图到 ComfyUI、提交工作流并轮询 /history，"
+            "完成后下载产物并记录 sha256 与 ffprobe 结果。默认连接 http://127.0.0.1:8188；"
+            "workflow 可指向任意 API 格式工作流（需要 __CINELOCK_*__ 占位符）。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "shot_id": {"type": "string", "description": "镜头 ID"},
+                "provider_id": {
+                    "type": "string",
+                    "description": "可选：指定一个 comfyui 适配器厂商，默认自动选择",
+                },
+                "base_url": {
+                    "type": "string",
+                    "description": "可选：ComfyUI 地址，例如 http://127.0.0.1:8188",
+                },
+                "workflow": {
+                    "type": "string",
+                    "description": "可选：工作流路径（项目相对或绝对），默认 config/comfyui/workflow.example.json",
+                },
+                "timeout_sec": {
+                    "type": "number",
+                    "minimum": 1,
+                    "description": "可选：整体超时秒数，默认 600",
+                },
+                "dry_run": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "true 时只验证并返回计划，不联网",
+                },
+            },
+            "required": ["shot_id"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": True},
+    },
+    {
+        "name": "cinelock_generate_http",
+        "title": "调用官方 HTTP API 生成",
+        "description": (
+            "按 shot_id 和 provider_id 调用 http_api 适配器（official_kling / official_runway "
+            "或自定义通用 HTTP 厂商），轮询任务并下载产物。API Key 只从环境变量读取。"
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "shot_id": {"type": "string", "description": "镜头 ID"},
+                "provider_id": {
+                    "type": "string",
+                    "description": "http_api 适配器厂商，例如 official_kling / official_runway",
+                },
+                "base_url": {
+                    "type": "string",
+                    "description": "可选：覆盖厂商默认 API 地址",
+                },
+                "timeout_sec": {
+                    "type": "number",
+                    "minimum": 1,
+                    "description": "可选：整体超时秒数，默认 900",
+                },
+                "dry_run": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "true 时只验证并返回计划，不联网",
+                },
+            },
+            "required": ["shot_id", "provider_id"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": True},
+    },
 ]
+
+TOOL_ALIASES = {
+    "nineflow_status": "cinelock_status",
+    "nineflow_validate": "cinelock_validate",
+    "nineflow_variant": "cinelock_variant",
+    "nineflow_audit": "cinelock_audit",
+    "nineflow_jobs": "cinelock_jobs",
+    "nineflow_build": "cinelock_build",
+    "nineflow_contact_sheet": "cinelock_contact_sheet",
+    "nineflow_handoff_export": "cinelock_handoff_export",
+    "nineflow_generate_comfyui": "cinelock_generate_comfyui",
+    "nineflow_generate_http": "cinelock_generate_http",
+}
 
 
 def _json_text(payload: Any) -> str:
@@ -165,8 +287,8 @@ def _json_text(payload: Any) -> str:
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
-def _tool_result(payload: Any) -> Dict[str, Any]:
-    return {"content": [{"type": "text", "text": _json_text(payload)}], "isError": False}
+def _tool_result(payload: Any, *, is_error: bool = False) -> Dict[str, Any]:
+    return {"content": [{"type": "text", "text": _json_text(payload)}], "isError": is_error}
 
 
 def _tool_error(message: str) -> Dict[str, Any]:
@@ -225,9 +347,14 @@ class McpServer:
             "capabilities": {"tools": {"listChanged": False}},
             "serverInfo": {"name": SERVER_NAME, "version": __version__},
             "instructions": (
-                "CineLock 把项目、角色卡、参考图、时间线和厂商矩阵编译成共享上下文。"
-                "先用 cinelock_status 查看当前修订，再用 cinelock_variant 读取某个镜头×厂商的编译结果；"
-                "写入共享包需要显式调用 cinelock_build 并设置 write=true。"
+                "CineLock 是平台无关的 AI 视频上下文治理引擎。推荐流程："
+                "cinelock_status / cinelock_validate 查看当前上下文；"
+                "cinelock_variant 读取某个镜头×厂商的编译结果；"
+                "cinelock_handoff_export 按 shot_id 导出 zip 或文件夹；"
+                "cinelock_generate_comfyui / cinelock_generate_http 直接调用本地或官方 API；"
+                "cinelock_audit / cinelock_jobs 复核证据链。"
+                "cinelock_build 默认只读，write=true 才写入共享包。"
+                "旧版 nineflow_* 工具名仍作为兼容别名接受，对外统一使用 cinelock_*。"
             ),
         }
 
@@ -238,6 +365,7 @@ class McpServer:
             return _tool_error("缺少工具名")
         if not isinstance(arguments, dict):
             return _tool_error("arguments 必须是对象")
+        name = TOOL_ALIASES.get(name, name)
 
         try:
             if name == "cinelock_status":
@@ -254,6 +382,12 @@ class McpServer:
                 return _tool_result(self._build(arguments))
             if name == "cinelock_contact_sheet":
                 return _tool_result(self._contact_sheet(arguments))
+            if name == "cinelock_handoff_export":
+                return self._job_tool_result(self._handoff_export(arguments))
+            if name == "cinelock_generate_comfyui":
+                return self._job_tool_result(self._generate_comfyui(arguments))
+            if name == "cinelock_generate_http":
+                return self._job_tool_result(self._generate_http(arguments))
         except (PackError, JobError, MediaError, ValueError) as exc:
             return _tool_error(str(exc))
         return _tool_error("未知工具：%s" % name)
@@ -271,8 +405,9 @@ class McpServer:
                     "provider_id": provider_id,
                     "display_name": profile.get("display_name"),
                     "adapter": profile.get("adapter"),
+                    "preset": profile.get("preset"),
                     "enabled": profile.get("enabled", True),
-                    "default_mode": profile.get("default_mode"),
+                    "experimental": bool(profile.get("experimental")),
                 }
             )
 
@@ -323,15 +458,7 @@ class McpServer:
         provider_id = str(args.get("provider_id") or "").strip()
         if not shot_id or not provider_id:
             raise ValueError("shot_id 和 provider_id 必填")
-        if self.ctx.shot(shot_id) is None:
-            raise ValueError("镜头不存在：%s" % shot_id)
-        if provider_id not in self.ctx.provider_profiles():
-            raise ValueError("厂商不存在：%s" % provider_id)
-
-        pack = build_pack(self.ctx, [provider_id], write=False)
-        variant = get_variant(pack, shot_id, provider_id)
-        if variant is None:
-            raise ValueError("没有找到变体：%s × %s" % (shot_id, provider_id))
+        variant = self._preview_variant(shot_id, provider_id)
 
         references = []
         for ref in variant.get("references") or []:
@@ -440,6 +567,141 @@ class McpServer:
             "timestamps": result.get("timestamps"),
             "probe": result.get("probe"),
         }
+
+    def _handoff_export(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        shot_id = str(args.get("shot_id") or "").strip()
+        if not shot_id:
+            raise ValueError("shot_id 必填")
+        provider_id = self._provider_for("handoff", str(args.get("provider_id") or "").strip() or None)
+        bundle = str(args.get("format") or "zip").lower()
+        if bundle not in ("zip", "folder"):
+            raise ValueError("format 只能是 zip 或 folder")
+        variant = self._preview_variant(shot_id, provider_id)
+        job = execute_variant(self.ctx, variant, options={"bundle": bundle})
+
+        job_id = str(job.get("job_id") or "")
+        folder = exports_dir(self.ctx) / "handoff" / job_id
+        zip_path = next(
+            (item.get("path") for item in job.get("outputs") or [] if item.get("kind") == "zip"),
+            None,
+        )
+        payload = self._job_payload(job)
+        payload.update(
+            {
+                "bundle": bundle,
+                "folder": display_path(folder, self.ctx.root) if folder.is_dir() else None,
+                "zip": zip_path,
+                "files": [
+                    item.get("path")
+                    for item in job.get("outputs") or []
+                    if item.get("path")
+                ],
+            }
+        )
+        return payload
+
+    def _generate_comfyui(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        shot_id = str(args.get("shot_id") or "").strip()
+        if not shot_id:
+            raise ValueError("shot_id 必填")
+        provider_id = self._provider_for("comfyui", str(args.get("provider_id") or "").strip() or None)
+        options = self._execution_options(args, ("base_url", "workflow", "timeout_sec", "poll_interval_sec"))
+        variant = self._preview_variant(shot_id, provider_id)
+        job = execute_variant(
+            self.ctx,
+            variant,
+            dry_run=bool(args.get("dry_run", False)),
+            options=options,
+        )
+        payload = self._job_payload(job)
+        payload["base_url"] = options.get("base_url") or (variant.get("provider") or {}).get("base_url")
+        payload["workflow"] = options.get("workflow") or (variant.get("provider") or {}).get("workflow")
+        return payload
+
+    def _generate_http(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        shot_id = str(args.get("shot_id") or "").strip()
+        provider_id = str(args.get("provider_id") or "").strip()
+        if not shot_id or not provider_id:
+            raise ValueError("shot_id 和 provider_id 必填")
+        provider_id = self._provider_for("http_api", provider_id)
+        options = self._execution_options(args, ("base_url", "timeout_sec", "poll_interval_sec"))
+        variant = self._preview_variant(shot_id, provider_id)
+        job = execute_variant(
+            self.ctx,
+            variant,
+            dry_run=bool(args.get("dry_run", False)),
+            options=options,
+        )
+        payload = self._job_payload(job)
+        payload["base_url"] = options.get("base_url") or (variant.get("provider") or {}).get("base_url")
+        return payload
+
+    def _execution_options(self, args: Dict[str, Any], keys: tuple) -> Dict[str, Any]:
+        options: Dict[str, Any] = {}
+        for key in keys:
+            value = args.get(key)
+            if value in (None, ""):
+                continue
+            if key.endswith("_sec"):
+                try:
+                    value = float(value)
+                except (TypeError, ValueError):
+                    raise ValueError("%s 必须是数字" % key)
+                if value <= 0:
+                    raise ValueError("%s 必须大于 0" % key)
+            options[key] = value
+        return options
+
+    def _provider_for(self, adapter: str, preferred: Optional[str]) -> str:
+        profiles = self.ctx.provider_profiles()
+        order = list(self.ctx.provider_order())
+        if preferred:
+            profile = profiles.get(preferred)
+            if not profile:
+                raise ValueError("厂商不存在：%s（可用：%s）" % (preferred, ", ".join(order)))
+            actual = str(profile.get("adapter") or "")
+            if actual != adapter:
+                raise ValueError("厂商 %s 使用 %s 适配器，不是 %s" % (preferred, actual or "未知", adapter))
+            return preferred
+        for provider_id in order:
+            profile = profiles.get(provider_id) or {}
+            if str(profile.get("adapter") or "") == adapter and profile.get("enabled", True):
+                return provider_id
+        raise ValueError("没有启用中的 %s 适配器厂商" % adapter)
+
+    def _preview_variant(self, shot_id: str, provider_id: str) -> Dict[str, Any]:
+        if self.ctx.shot(shot_id) is None:
+            raise ValueError("镜头不存在：%s" % shot_id)
+        if provider_id not in self.ctx.provider_profiles():
+            raise ValueError("厂商不存在：%s" % provider_id)
+        pack = build_pack(self.ctx, [provider_id], write=False)
+        variant = get_variant(pack, shot_id, provider_id)
+        if variant is None:
+            raise ValueError("没有找到变体：%s × %s" % (shot_id, provider_id))
+        return variant
+
+    def _job_payload(self, job: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "job_id": job.get("job_id"),
+            "status": job.get("status"),
+            "dry_run": job.get("dry_run"),
+            "shot_id": job.get("shot_id"),
+            "provider_id": job.get("provider_id"),
+            "adapter": job.get("adapter"),
+            "mode": job.get("mode"),
+            "context_revision": job.get("context_revision"),
+            "short_revision": job.get("short_revision"),
+            "variant_sha256": job.get("variant_sha256"),
+            "outputs": job.get("outputs") or [],
+            "warnings": job.get("warnings") or [],
+            "error": job.get("error"),
+            "adapter_meta": job.get("adapter_meta") or {},
+            "audit_hint": "调用 cinelock_audit 并传入 job_id 可复核证据链",
+        }
+
+    def _job_tool_result(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        failed = payload.get("status") in ("failed", "blocked", "canceled")
+        return _tool_result(payload, is_error=failed)
 
 
 def serve(ctx: ProjectContext, stdin=None, stdout=None) -> int:

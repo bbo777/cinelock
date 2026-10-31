@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from support import TempProjectCase
-from cinelock.compiler import compile_all
+from cinelock.compiler import _build_dispatch
 from cinelock.context_pack import build_pack
 
 
@@ -80,37 +80,67 @@ class CompilerTest(TempProjectCase):
         right = [(v["shot_id"], v["provider_id"], v["prompt_sha256"], v["variant_sha256"], v["seed"]) for v in second["variants"]]
         self.assertEqual(left, right)
 
-    def test_default_matrix_matches_the_installed_cli(self) -> None:
-        self.assertEqual(self.ctx.provider_order(), ["mock", "qwenwan", "yuanbao", "handoff"])
-        for provider_id in ("qwenwan", "yuanbao"):
-            profile = self.profiles[provider_id]
-            self.assertTrue(profile.get("cli_available"))
-            self.assertEqual(profile["modes"], ["text2video", "img2video"])
-            self.assertEqual(profile["max_refs"], 1)
-            self.assertNotIn("imgs2video", profile["cli_mode_map"].values())
-        for provider_id in ("doubao", "dola", "zhipu", "volcengine", "bailian", "tokenhub"):
-            profile = self.profiles[provider_id]
-            self.assertFalse(profile.get("cli_available"))
-            self.assertFalse(profile.get("enabled"))
+    def test_default_matrix_is_platform_agnostic(self) -> None:
+        self.assertEqual(
+            self.ctx.provider_order(),
+            ["mock", "handoff", "comfyui", "official_kling", "official_runway"],
+        )
+        expected = {
+            "mock": "mock",
+            "handoff": "handoff",
+            "comfyui": "comfyui",
+            "official_kling": "http_api",
+            "official_runway": "http_api",
+        }
+        for provider_id, adapter in expected.items():
+            self.assertEqual(self.profiles[provider_id]["adapter"], adapter)
+        self.assertEqual(self.profiles["comfyui"]["max_refs"], 10)
+        self.assertTrue(self.profiles["comfyui"]["experimental"])
+        self.assertEqual(set(self.profiles["official_kling"]["modes"]), {"text2video", "img2video", "first_last"})
+        self.assertNotIn("cli_provider_id", self.profiles["mock"])
 
-    def test_qwenwan_gets_the_same_identity_anchor_as_a_single_first_frame(self) -> None:
+    def test_comfyui_gets_the_same_identity_anchor_and_multi_reference_prompt(self) -> None:
         lookup = {(v["shot_id"], v["provider_id"]): v for v in self.variants}
-        variant = lookup[("E01-004", "qwenwan")]
-        self.assertEqual(variant["mode"], "img2video")
-        self.assertEqual(variant["dispatch"]["quota_flow_mode"], "img2video")
-        self.assertEqual(variant["reference_count"], 1)
+        variant = lookup[("E01-004", "comfyui")]
+        mock_variant = lookup[("E01-004", "mock")]
+        self.assertEqual(variant["mode"], "multi_ref")
+        self.assertEqual(variant["dispatch"]["adapter"], "comfyui")
+        self.assertEqual(variant["dispatch"]["endpoint"], "http://127.0.0.1:8188")
+        self.assertGreater(variant["reference_count"], 1)
         self.assertEqual(variant["references"][0]["asset_id"], "REF_LINYE_FRONT_V01")
-        self.assertEqual(variant["references"][0]["role"], "identity_first_frame")
-        self.assertIn("Animate from the character identity reference", variant["prompt"])
+        self.assertIn("Reference images, in order", variant["prompt"])
+        self.assertEqual(
+            [ref["asset_id"] for ref in variant["references"]],
+            [ref["asset_id"] for ref in mock_variant["references"]],
+        )
 
-    def test_planned_provider_is_blocked_instead_of_silently_routed(self) -> None:
-        variants = compile_all(self.ctx, ["dola"])
-        self.assertEqual(len(variants), len(self.ctx.shots()))
-        for variant in variants:
-            codes = {item["code"] for item in variant["blockers"]}
-            self.assertIn("B_PROVIDER_DISABLED", codes)
-            self.assertIn("B_CLI_PROVIDER_UNAVAILABLE", codes)
-            self.assertFalse(variant["dispatch"]["ready"])
+    def test_official_providers_carry_non_secret_adapter_config(self) -> None:
+        lookup = {(v["shot_id"], v["provider_id"]): v for v in self.variants}
+        variant = lookup[("E01-001", "official_runway")]
+        provider = variant["provider"]
+        self.assertEqual(provider["adapter"], "http_api")
+        self.assertEqual(provider["preset"], "runway")
+        self.assertEqual(provider["base_url"], "https://api.dev.runwayml.com")
+        self.assertEqual(provider["api_key_env"], "RUNWAY_API_KEY")
+        self.assertNotIn("api_key", provider)
+        self.assertEqual(variant["dispatch"]["preset"], "runway")
+        self.assertEqual(variant["dispatch"]["requires_env"], ["RUNWAY_API_KEY"])
+
+    def test_unknown_or_disabled_adapter_is_blocked_instead_of_silently_routed(self) -> None:
+        blockers = []
+        warnings = []
+        dispatch = _build_dispatch({"display_name": "Bogus", "adapter": "bogus"}, "text2video", [], blockers, warnings)
+        self.assertEqual(dispatch["adapter"], "manual")
+        self.assertFalse(dispatch["ready"])
+        self.assertIn("B_ADAPTER_UNKNOWN", {item["code"] for item in blockers})
+
+        blockers = []
+        warnings = []
+        dispatch = _build_dispatch(
+            {"display_name": "Off", "adapter": "mock", "enabled": False}, "text2video", [], blockers, warnings
+        )
+        self.assertFalse(dispatch["ready"])
+        self.assertIn("B_PROVIDER_DISABLED", {item["code"] for item in blockers})
 
 
 if __name__ == "__main__":

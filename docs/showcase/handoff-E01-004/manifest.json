@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "job_id": "JOB_20261031T134503Z_E01-004_handoff_adb8f9",
+  "job_id": "JOB_20261031T151022Z_E01-004_handoff_fdc887",
   "project_id": "nine-inning-bottom",
   "shot_id": "E01-004",
   "provider_id": "handoff",
@@ -10,9 +10,9 @@
   "aspect_ratio": "16:9",
   "resolution": "1920x1080",
   "fps": 24,
-  "seed": 1199982073,
-  "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
-  "short_revision": "9bb2cfb6449f",
+  "seed": 613553109,
+  "context_revision": "9b1c685fec55813dcb96a4d8a729d833df77d5476ad7cdd029267f1cbf5b2e31",
+  "short_revision": "9b1c685fec55",
   "prompt_sha256": "774c474761d35f63f298e7d52889e321352f9bd85b51df789d13020097e659b5",
   "negative_sha256": "00aa0306d91f63ddccd1e04d10f70d00a24b7c89c665a7d6a2d3d8a7b7dd91d8",
   "prompt_file": "prompt.txt",
@@ -69,5 +69,5 @@
       "public_url": null
     }
   ],
-  "created_at": "2026-10-31T13:45:03Z"
+  "created_at": "2026-10-31T15:10:25Z"
 }

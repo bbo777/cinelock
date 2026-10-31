@@ -1,6 +1,6 @@
 # How I Used Hash Locks and a State Machine to Fix Multi-Model AI Video Continuity
 
-> One original character, two scenes, five shots, four providers, twenty variants — all compiled from the same context revision `9bb2cfb6449f`.
+> One original character, two scenes, five shots, five providers, twenty-five variants — all compiled from the same context revision `9b1c685fec55`.
 > The demo is compute-limited and stops at keyframes and context compilation: the twenty variants are executable, auditable generation specs, not a finished film. The repository ships mock placeholder video.
 > The project also ships a zero-dependency MCP server so agents can query the lock directly.
 
@@ -95,7 +95,7 @@ Character cards define the initial state. Every subsequent change must appear in
 
 Application order is fixed: remove, then add; sets are de-duplicated; unspecified fields carry forward. The timeline is walked once to produce a canonical snapshot for every shot. The compiler consumes the snapshot, not the raw character card.
 
-This distinction matters. A character card says who someone is. A snapshot says who they are **in this shot**. All four providers receive the same snapshot, so none of them gets to infer a different costume or injury state.
+This distinction matters. A character card says who someone is. A snapshot says who they are **in this shot**. All providers receive the same snapshot, so none of them gets to infer a different costume or injury state.
 
 Using incremental deltas instead of a single final state preserves *when* a change happened. Audit can replay the timeline and compare every field against the snapshot recorded with the job. If one field differs, it reports the exact difference.
 
@@ -105,7 +105,7 @@ The compiler fixes block order, reference priority, truncation rules, duration r
 
 The audit includes a `recompile` check for exactly this reason. Without it, "reproducible" is just a claim.
 
-In the demo project: 1 original character, 2 scenes, 5 shots × 4 providers = 20 variants, 56 reference usages, one revision (`9bb2cfb6449f`).
+In the demo project: 1 original character, 2 scenes, 5 shots × 5 providers = 25 variants, 79 reference usages, one revision (`9b1c685fec55`).
 
 ## 5. Layered audit: evidence is not the same as job outcome
 
@@ -157,17 +157,22 @@ Add this to Claude Desktop's `claude_desktop_config.json` (Windows: `%APPDATA%\C
 
 WorkBuddy uses the same shape in `%USERPROFILE%\.workbuddy\mcp.json`. Replace the path with your checkout; use `/` in Windows paths, or escape backslashes as `\\`. If the client cannot find `python`, point `command` at the absolute interpreter path.
 
-The server exposes seven tools:
+The server exposes ten tools:
 
 - `cinelock_status` — revision, shots, providers, pack state, validation summary;
 - `cinelock_validate` — character cards, reference hashes, timeline, provider config;
-- `cinelock_variant` — compiled prompt, references, and continuity snapshot for one shot × provider (in-memory only);
+- `cinelock_variant` — compiled prompt, references, and continuity snapshot for one shot × `provider_id` (in-memory only);
 - `cinelock_audit` — the 13-check evidence audit for a job;
 - `cinelock_jobs` — recent jobs, filterable by shot or provider;
 - `cinelock_build` — preview by default; `write=true` performs a full build;
-- `cinelock_contact_sheet` — 3×3 contact sheet from a job's local video.
+- `cinelock_contact_sheet` — 3×3 contact sheet from a job's local video;
+- `cinelock_handoff_export` — handoff package for a shot, as `zip` or `folder`;
+- `cinelock_generate_comfyui` — submit a ComfyUI workflow and poll for the result;
+- `cinelock_generate_http` — call a configured official HTTP API.
 
-The boundaries are deliberate: stdio only, no listening port, no network calls; the project directory is fixed at process launch; `write=true` must be explicit and cannot be combined with a single-provider preview; Quota-Flow credentials are never exposed through MCP.
+Public tool names are `cinelock_*`; legacy `nineflow_*` names remain as compatibility aliases.
+
+The boundaries are deliberate: stdio only, no listening port; read-only tools make no network calls, and generate tools only contact the endpoint you explicitly pass; the project directory is fixed at process launch; `write=true` must be explicit and cannot be combined with a single-provider preview; provider credentials are read from environment variables and never exposed through MCP.
 
 MCP is not a label here. It is the natural distribution surface for the constraints: an agent can query the revision, fetch a compiled variant, and run the audit without reimplementing any of the semantics — and without summarizing away the layered verdict.
 
@@ -187,7 +192,7 @@ Hash locks make sure every provider sees the same facts. The state machine makes
 
 Consistency is not about making models non-random. It is about keeping randomness inside a controlled boundary — and being able to explain every crossing.
 
-Code, demo project, 67 tests, 13 audit checks, external artifact import, 7 MCP tools, ffprobe validation, and the contact-sheet tool:
+Code, demo project, 76 tests, 13 audit checks, external artifact import, 10 MCP tools, ComfyUI adapter, ffprobe validation, and the contact-sheet tool:
 
 **https://github.com/bbo777/cinelock**
 

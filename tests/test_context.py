@@ -45,6 +45,14 @@ class ContextRevisionTest(TempProjectCase):
             fh.write(b"\0")
         self.assertNotEqual(self.context().context_revision(), before)
 
+    def test_environment_reports_no_node_dependency(self) -> None:
+        from cinelock.environment import environment_report
+
+        env = environment_report(self.ctx)
+        self.assertFalse(env["node_required"])
+        self.assertEqual(env["adapters"], ["comfyui", "handoff", "http_api", "mock"])
+        self.assertEqual(len(env["providers"]), len(self.ctx.provider_order()))
+
     def test_pack_covers_every_shot_and_provider_with_one_revision(self) -> None:
         pack = self.build()
         ctx = self.ctx
@@ -60,7 +68,7 @@ class ContextRevisionTest(TempProjectCase):
 
     def test_rebuild_removes_stale_variant_files(self) -> None:
         self.build()
-        stale = self.project_dir / "context" / "shots" / "E01-001" / "dola.json"
+        stale = self.project_dir / "context" / "shots" / "E01-001" / "removed_provider.json"
         stale.write_text("{}", encoding="utf-8")
         self.assertTrue(stale.is_file())
 
@@ -73,7 +81,7 @@ class ContextRevisionTest(TempProjectCase):
         self.assertIsNotNone(loaded)
         self.assertEqual(loaded["context_revision"], pack["context_revision"])
 
-        for shot_id, provider_id in (("E01-001", "mock"), ("E01-004", "qwenwan"), ("E01-005", "handoff")):
+        for shot_id, provider_id in (("E01-001", "mock"), ("E01-004", "official_kling"), ("E01-005", "handoff")):
             json_path = variant_file(self.ctx, shot_id, provider_id)
             self.assertTrue(json_path.is_file(), json_path)
             self.assertTrue(json_path.with_suffix(".prompt.txt").is_file(), json_path)

@@ -3,25 +3,40 @@
   "shot_id": "E01-003",
   "episode_id": "E01",
   "scene_id": "SC02_BATTERBOX_DUSK",
-  "provider_id": "qwenwan",
+  "provider_id": "official_runway",
   "provider": {
-    "id": "qwenwan",
-    "display_name": "千问·通义万相",
-    "kind": "quota_flow_webview",
-    "cli_provider_id": "qwenwan",
-    "cli_available": true,
+    "id": "official_runway",
+    "display_name": "Runway 官方 API（实验）",
+    "adapter": "http_api",
+    "preset": "runway",
     "enabled": true,
+    "experimental": true,
     "modes": [
       "text2video",
       "img2video"
     ],
     "max_refs": 1,
     "durations": [
-      5
+      5,
+      10
     ],
     "ref_semantics": "first_frame",
     "supports_negative_prompt": false,
-    "supports_seed": false
+    "supports_seed": true,
+    "base_url": "https://api.dev.runwayml.com",
+    "workflow": null,
+    "model": "gen3a_turbo",
+    "image_input": "data_uri",
+    "timeout_sec": 900,
+    "poll_interval_sec": 5,
+    "api_key_env": "RUNWAY_API_KEY",
+    "access_key_env": null,
+    "secret_key_env": null,
+    "ratio_map": {
+      "16:9": "1280:768",
+      "9:16": "768:1280"
+    },
+    "send_seed": true
   },
   "mode": "img2video",
   "mode_label": "图生视频（单图首帧）",
@@ -29,16 +44,16 @@
   "mode_instruction": "Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant.",
   "duration_sec": 5,
   "requested_duration_sec": 7,
-  "duration_choice": "truncated",
+  "duration_choice": "nearest",
   "aspect_ratio": "16:9",
   "resolution": "1920x1080",
   "fps": 24,
-  "seed": 570151118,
-  "seed_supported": false,
+  "seed": 1457200318,
+  "seed_supported": true,
   "candidate_index": 0,
-  "prompt": "cinematic 2D anime, hand-drawn cel animation, visible ink line work, flat color with subtle gradient, slight film grain, restrained warm palette, sports drama staging, 16:9 composition. Lin Ye (CH_LINYE_01): 19-year-old male baseball player, lean athletic build, short slightly messy black hair, sharp dark eyes, angular face, faint scar over his right eyebrow, warm tan skin, wearing a white home jersey with navy pinstripes and the number 7 on the back, navy cap, black batting gloves. Current wardrobe: white home jersey stained with infield dirt and sweat, navy cap slightly askew, muddy knees. Expression: determined. Visible injuries: none. Props in hand: wooden baseball bat. Identity invariants: jersey number 7; scar over the right eyebrow; black batting gloves; short black hair. Scene: worn dirt batter's box in an old high-school baseball field, dusk. Lighting: golden-hour backlight from the outfield, dust haze, rim light on the batter, deep blue sky. Composition: batter's box centered, diamond receding into dust haze, low horizon. Shot: full shot, full body head to toe. Camera: follow shot, camera follows subject. Action: Lin Ye walks from the dugout toward the batter's box, bat loose in his right hand, dusty jersey catching the backlight, crowd blurred at the edge of frame. Continuity: this shot follows E01-002. Costume, injuries and props continue unchanged. Reference images, in order: [1] Lin Ye — identity anchor used as first frame. Animate from the first-frame still in [1]. Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant. clean line art, consistent character design, stable face, natural weight, no morphing, no character drift. preserve character identity, stable face, natural motion, no character drift. Avoid: different hair color, different jersey number, long hair, beard, tattoos, photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs.",
-  "prompt_chars": 2086,
-  "prompt_sha256": "0f355a41705329d9d0d392113f30c474ec6b749c56774da6686ea45bf5ff7c5f",
+  "prompt": "cinematic 2D anime, hand-drawn cel animation, visible ink line work, flat color with subtle gradient, slight film grain, restrained warm palette, sports drama staging, 16:9 composition. Lin Ye (CH_LINYE_01): 19-year-old male baseball player, lean athletic build, short slightly messy black hair, sharp dark eyes, angular face, faint scar over his right eyebrow, warm tan skin, wearing a white home jersey with navy pinstripes and the number 7 on the back, navy cap, black batting gloves. Current wardrobe: white home jersey stained with infield dirt and sweat, navy cap slightly askew, muddy knees. Expression: determined. Visible injuries: none. Props in hand: wooden baseball bat. Identity invariants: jersey number 7; scar over the right eyebrow; black batting gloves; short black hair. Scene: worn dirt batter's box in an old high-school baseball field, dusk. Lighting: golden-hour backlight from the outfield, dust haze, rim light on the batter, deep blue sky. Composition: batter's box centered, diamond receding into dust haze, low horizon. Shot: full shot, full body head to toe. Camera: follow shot, camera follows subject. Action: Lin Ye walks from the dugout toward the batter's box, bat loose in his right hand, dusty jersey catching the backlight, crowd blurred at the edge of frame. Continuity: this shot follows E01-002. Costume, injuries and props continue unchanged. Reference images, in order: [1] Lin Ye — identity anchor used as first frame. Animate from the first-frame still in [1]. Animate from the character identity reference in [1]. It is a character sheet, not a shot frame: restage the pose, camera and background to match the action while preserving the face, hair and every listed identity invariant. clean line art, consistent character design, stable face, natural weight, no morphing, no character drift. preserve character identity, stable face, natural motion. Avoid: different hair color, different jersey number, long hair, beard, tattoos, photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs.",
+  "prompt_chars": 2066,
+  "prompt_sha256": "e17ec57d25f74befa221490fca3a603e2085e09086fe3ca4d6e7f6f2502e2816",
   "negative_prompt": "photorealistic, 3D render, CGI, plastic skin, extra fingers, deformed hands, fused limbs, duplicate face, cross-eyed, text, subtitle, watermark, logo, UI, frame border, oversaturated, neon, lens flare, character drift, face swap, aging, different hair color, different jersey number, long hair, beard, tattoos",
   "negative_sha256": "00aa0306d91f63ddccd1e04d10f70d00a24b7c89c665a7d6a2d3d8a7b7dd91d8",
   "negative_mode": "inline",
@@ -138,19 +153,16 @@
     }
   ],
   "dispatch": {
-    "adapter": "quota_flow",
-    "quota_flow_provider": "qwenwan",
-    "quota_flow_mode": "img2video",
-    "requires_public_urls": true,
-    "image_urls": [],
-    "missing_public_urls": [
-      "REF_LINYE_FRONT_V01"
+    "adapter": "http_api",
+    "endpoint": "https://api.dev.runwayml.com",
+    "preset": "runway",
+    "requires_env": [
+      "RUNWAY_API_KEY"
     ],
-    "non_https_public_urls": [],
-    "ready": false,
-    "block_reasons": [
-      "缺少 public_url：REF_LINYE_FRONT_V01"
-    ]
+    "experimental": true,
+    "public_urls": [],
+    "ready": true,
+    "block_reasons": []
   },
   "warnings": [
     {
@@ -163,16 +175,12 @@
     },
     {
       "code": "W_DURATION_ADJUSTED",
-      "message": "目标 7s 超过厂商上限 5s，已截断为 5s"
-    },
-    {
-      "code": "W_PUBLIC_URL_MISSING",
-      "message": "1 张参考图缺少 public_url；Quota-Flow 生成前需要补公网 https URL"
+      "message": "目标 7s 不在支持列表 5/10，已调整为最接近的 5s"
     }
   ],
   "blockers": [],
-  "context_revision": "9bb2cfb6449f5d9fdfd375fb5eb7e7908cd39b2b643a5768c6636a0af77c9008",
-  "short_revision": "9bb2cfb6449f",
-  "compiled_at": "2026-10-31T14:08:15Z",
-  "variant_sha256": "d24f7e1eaeb1af423f7ded790a9060c3be6e2dcfd5a03939ea2e04ae90347dc2"
+  "context_revision": "9b1c685fec55813dcb96a4d8a729d833df77d5476ad7cdd029267f1cbf5b2e31",
+  "short_revision": "9b1c685fec55",
+  "compiled_at": "2026-10-31T14:56:04Z",
+  "variant_sha256": "6cb8ea4f37d47a710aeae2516e3b307f49f9e9ef2dc53c807d8a08f23c69a02f"
 }

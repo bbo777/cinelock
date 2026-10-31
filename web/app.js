@@ -5,7 +5,6 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const STATUS_LABELS = {
   ready: "可执行",
   warning: "有告警",
-  needs_public_url: "待公网 URL",
   not_ready: "未就绪",
   blocked: "阻断",
   queued: "排队",
@@ -23,25 +22,19 @@ const MODE_LABELS = {
   first_last: "首尾帧",
 };
 
-const KIND_LETTERS = {
+const ADAPTER_LETTERS = {
   mock: "M",
   handoff: "H",
-  quota_flow_webview: "W",
-  quota_flow_api: "A",
-};
-
-const KIND_LABELS = {
-  mock: "本地适配器",
-  handoff: "手工交接",
-  quota_flow_webview: "网页配额",
-  quota_flow_api: "API 配额",
+  comfyui: "C",
+  http_api: "A",
 };
 
 const ADAPTER_LABELS = {
-  mock: "mock",
-  handoff: "handoff",
+  mock: "本地占位",
+  handoff: "导出交接",
+  comfyui: "ComfyUI",
+  http_api: "官方 API",
   handoff_import: "外部导入",
-  quota_flow: "Quota-Flow",
 };
 
 const EXPR_LABELS = {
@@ -283,12 +276,7 @@ function modeLabel(variant) {
 function computeVariantStatus(variant) {
   if ((variant.blockers || []).length) return "blocked";
   const dispatch = variant.dispatch || {};
-  if (!dispatch.ready) {
-    if (dispatch.requires_public_urls && (((dispatch.missing_public_urls || []).length) || ((dispatch.non_https_public_urls || []).length))) {
-      return "needs_public_url";
-    }
-    return "not_ready";
-  }
+  if (!dispatch.ready) return "not_ready";
   return (variant.warnings || []).length ? "warning" : "ready";
 }
 
@@ -596,17 +584,17 @@ function renderEnv() {
   root.appendChild(envChip("上下文", !pack.present ? "未构建" : (pack.current ? "已同步" : "已过期"),
     !pack.present ? "" : (pack.current ? "ready" : "warning")));
   root.appendChild(envChip("Python", env.python || "?", "ready"));
-  root.appendChild(envChip("ffmpeg", env.ffmpeg ? "可用" : "缺失", env.ffmpeg ? "ready" : "blocked"));
-  root.appendChild(envChip("Node", env.node_version ? "v" + env.node_version : "缺失",
-    env.node_ok ? "ready" : "warning", "Quota-Flow 需要 Node ≥ " + (env.node_min_major || 20)));
-  root.appendChild(envChip("Quota-Flow", env.quota_flow_ready ? "可用" : (env.quota_flow_found ? "环境不满足" : "未安装"),
-    env.quota_flow_ready ? "ready" : "warning",
-    (env.quota_flow_notes || []).join(" ")));
+  root.appendChild(envChip("ffmpeg", env.ffmpeg ? "可用" : "缺失", env.ffmpeg ? "ready" : "warning"));
+  root.appendChild(envChip("ffprobe", env.ffprobe ? "可用" : "缺失", env.ffprobe ? "ready" : "warning",
+    "缺失时产物校验降级为文件存在性检查"));
+  const remote = (env.providers || []).filter((item) => (item.env || []).length);
+  const configured = remote.filter((item) => item.configured).length;
+  root.appendChild(envChip("远端凭证", remote.length ? configured + " / " + remote.length : "无需",
+    !remote.length || configured ? "ready" : "warning",
+    "API Key 只从环境变量读取，不写盘、不进交接包"));
   root.appendChild(envChip("任务账本", (status.jobs || []).length + " 条 · " + fmtBytes(status.jobs_ledger_bytes), "ready"));
 
-  if (!env.quota_flow_ready) {
-    root.appendChild(el("span", "env-note", "真实厂商执行前需安装 Quota-Flow + Node ≥20，并给参考图补公网 https URL；当前可用 mock / handoff。"));
-  }
+  root.appendChild(el("span", "env-note", "纯 Python 引擎，无需 Node。mock / handoff 开箱即用；comfyui 连本地服务，http_api 需在环境变量里配置厂商密钥。"));
 }
 
 // ---------- timeline ----------
@@ -815,13 +803,15 @@ function renderProviderRows(shot) {
     if (!variant) continue;
     const row = el("tr");
     row.classList.add("clickable");
-    if (variant.status === "needs_public_url" || variant.status === "not_ready") row.classList.add("dim");
+    if (variant.status === "not_ready") row.classList.add("dim");
 
+    const adapter = provider.adapter || "";
     const providerCell = el("div", "provider-cell");
-    const badge = el("span", "kind-badge " + (provider.kind || ""), KIND_LETTERS[provider.kind] || "?");
-    badge.title = KIND_LABELS[provider.kind] || provider.kind || "";
+    const badge = el("span", "kind-badge " + adapter, ADAPTER_LETTERS[adapter] || "?");
+    badge.title = ADAPTER_LABELS[adapter] || adapter;
     const name = el("div", "provider-name");
-    add(name, el("b", null, provider.display_name || provider.id), el("span", null, provider.id + " / " + (KIND_LABELS[provider.kind] || provider.kind || "")));
+    const adapterText = [adapter || "—", provider.experimental ? "实验" : ""].filter(Boolean).join(" · ");
+    add(name, el("b", null, provider.display_name || provider.id), el("span", null, provider.id + " / " + adapterText));
     add(providerCell, badge, name);
     const providerTd = el("td");
     providerTd.appendChild(providerCell);
@@ -848,11 +838,11 @@ function renderProviderRows(shot) {
       title: invalid ? "上下文校验有错误，先修复" : (!canDry ? "上下文已变化，先重新构建" : "演练不调用厂商、不写占位视频"),
     }));
 
-    const execLabel = provider.kind === "handoff" ? "导出" : (provider.kind === "mock" ? "生成" : "执行");
+    const execLabel = provider.adapter === "handoff" ? "导出" : (provider.adapter === "mock" ? "生成" : "执行");
     let execDisabled = stale || invalid || !variant.dispatch_ready;
     let execTitle = invalid ? "上下文校验有错误，先修复" : (stale ? "上下文已变化，先重新构建" : "");
     if (!stale && !invalid && !variant.dispatch_ready) {
-      execTitle = variant.status === "needs_public_url" ? "先在 reference_bank.json 补 public_url" : "执行前置条件未满足；打开详情查看";
+      execTitle = "执行前置条件未满足；打开详情查看";
     }
     actionWrap.appendChild(button(execLabel, "primary", () => runProvider(provider.id, false, shot.shot_id), {
       small: true,
@@ -1254,22 +1244,18 @@ function renderVariantDrawer(data) {
   const dispatchBox = el("div", "dispatch-box");
   const adapterLine = el("div");
   add(adapterLine, el("b", null, "适配器："), document.createTextNode(dispatch.adapter || "—"));
+  if (dispatch.preset) adapterLine.appendChild(el("span", "cc-notes", " · preset " + dispatch.preset));
+  if (dispatch.experimental) adapterLine.appendChild(el("span", "warn", " · 实验性"));
   dispatchBox.appendChild(adapterLine);
-  if (dispatch.quota_flow_provider || dispatch.quota_flow_mode) {
-    const qfLine = el("div");
-    add(qfLine, el("b", null, "Quota-Flow："), document.createTextNode((dispatch.quota_flow_provider || "—") + " / " + (dispatch.quota_flow_mode || "—")));
-    dispatchBox.appendChild(qfLine);
+  if (dispatch.endpoint) {
+    const endpointLine = el("div");
+    add(endpointLine, el("b", null, "端点："), document.createTextNode(dispatch.endpoint));
+    dispatchBox.appendChild(endpointLine);
   }
-  if (dispatch.requires_public_urls) {
-    const urls = el("div");
-    add(urls, el("b", null, "公网参考图："), document.createTextNode((dispatch.image_urls || []).length + " 张可用"));
-    if ((dispatch.missing_public_urls || []).length) {
-      urls.appendChild(el("span", "warn", " · 缺 " + dispatch.missing_public_urls.join("、")));
-    }
-    if ((dispatch.non_https_public_urls || []).length) {
-      urls.appendChild(el("span", "warn", " · 非 https " + dispatch.non_https_public_urls.join("、")));
-    }
-    dispatchBox.appendChild(urls);
+  if ((dispatch.requires_env || []).length) {
+    const envLine = el("div");
+    add(envLine, el("b", null, "所需环境变量："), document.createTextNode(dispatch.requires_env.join("、")));
+    dispatchBox.appendChild(envLine);
   }
   const readyLine = el("div");
   add(readyLine, el("b", null, "就绪："), document.createTextNode(dispatch.ready ? "是" : "否"));
@@ -1294,10 +1280,11 @@ function renderVariantDrawer(data) {
   let primaryLabel = "执行";
   if (dispatch.adapter === "mock") primaryLabel = "生成占位视频";
   if (dispatch.adapter === "handoff") primaryLabel = "导出交接包";
-  if (dispatch.adapter === "quota_flow") primaryLabel = "调用 Quota-Flow";
+  if (dispatch.adapter === "comfyui") primaryLabel = "提交 ComfyUI";
+  if (dispatch.adapter === "http_api") primaryLabel = "调用官方 API";
   if (invalid) primaryLabel = "上下文校验失败";
   else if (stale) primaryLabel = "先重新构建";
-  else if (!dispatch.ready) primaryLabel = (dispatch.missing_public_urls || []).length ? "待补公网 URL" : "前置条件未满足";
+  else if (!dispatch.ready) primaryLabel = "前置条件未满足";
   actions.push(button(primaryLabel, "primary", () => runProvider(variant.provider_id, false, variant.shot_id), {
     disabled: stale || invalid || !dispatch.ready,
     title: invalid ? "上下文校验有错误，先修复" : (stale ? "上下文已变化，先重新构建" : (!dispatch.ready ? (dispatch.block_reasons || []).join("；") : "")),
