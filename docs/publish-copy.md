@@ -158,7 +158,9 @@ It does not make models deterministic or judge visual quality. It bounds the ran
 ## 发布检查清单
 
 - [x] GitHub topics：`mcp` / `mcp-server` / `ai-video` / `aigc` / `continuity` / `claude-desktop` / `workbuddy` / `python`
-- [ ] GitHub 仓库改名 `nineflow` → `cinelock` 并验证旧 URL 重定向（HTTPS 通道当前被重置，待网络恢复）
+- [x] GitHub 仓库改名 `nineflow` → `cinelock`；旧 URL 已验证返回 301 重定向到 `https://github.com/bbo777/cinelock`
+- [x] 社区任务 Issues #1–#10：`https://github.com/bbo777/cinelock/issues`
+- [x] 公开看板 Nine Inning Bottom：`https://github.com/users/bbo777/projects/5`
 - [ ] 掘金：登录 → 写文章 → 粘贴 Markdown → 选分类/标签 → 发布 → 记录链接
 - [ ] V2EX：登录 → 分享创造 → 粘贴标题/正文 → 发布 → 记录链接
 - [ ] X：登录 → 按 6 条 Thread 发布 → 记录首条链接

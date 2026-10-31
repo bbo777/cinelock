@@ -651,7 +651,12 @@ python studio.py --project-dir projects/my-story serve
 - 接入新的厂商或 MCP 客户端；
 - 扩展时间线：更多角色、更多场景、更多状态分支。
 
-完整的任务拆解、验收标准、回报格式和可直接粘贴的 Issue 草稿见 [`docs/community-tasks.md`](docs/community-tasks.md)。镜06（顿棍立威）与镜07（特训蒙太奇）目前**只是提案**，时间线里还不存在，也没有编译好的提示词——需要先设计 `state_delta` 再 `build`。
+完整的任务拆解、验收标准、回报格式和可直接粘贴的 Issue 草稿见 [`docs/community-tasks.md`](docs/community-tasks.md)。
+
+- 任务 Issues：[bbo777/cinelock/issues](https://github.com/bbo777/cinelock/issues)
+- 任务看板：[Nine Inning Bottom](https://github.com/users/bbo777/projects/5)
+
+镜06（顿棍立威）与镜07（特训蒙太奇）目前**只是提案**，时间线里还不存在，也没有编译好的提示词——需要先设计 `state_delta` 再 `build`。
 
 提交前请确认：不包含 Cookie / API Key / 登录态；素材有合法授权；不要把 mock 占位视频标成真实成片。
 
@@ -726,4 +731,4 @@ CineLock 只做输入侧连续性治理与证据链审计，不对任何模型�
 
 ---
 
-如果这个项目对你有帮助，欢迎 Star、提交 Issue，或者直接 fork 一份，把《九局下半》的 5 个镜头真正生成出来。
+如果这个项目对你有帮助，欢迎 Star、在 [Issues](https://github.com/bbo777/cinelock/issues) 领取一个镜头，或者直接 fork 一份，把《九局下半》的 5 个镜头真正生成出来。

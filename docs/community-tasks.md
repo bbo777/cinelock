@@ -1,16 +1,36 @@
 # 社区任务清单 · Nine Inning Bottom
 
-这是《九局下半》演示关卡的**唯一任务源清单**。GitHub Issues / Project 看板按本文同步；即使看板暂时没建好，你也可以直接按这里的任务说明开 Issue 或提交 PR。
+这是《九局下半》演示关卡的**唯一任务源清单**，已同步到 GitHub：
+
+- Issues：https://github.com/bbo777/cinelock/issues
+- 看板（公开）：https://github.com/users/bbo777/projects/5
+
+即使看板有延迟，你也可以直接按这里的任务说明开 Issue 或提交 PR。
+
+| Issue | 任务 |
+| --- | --- |
+| [#1](https://github.com/bbo777/cinelock/issues/1) | 生成 E01-001（建立镜头） |
+| [#2](https://github.com/bbo777/cinelock/issues/2) | 生成 E01-002（泥污起点） |
+| [#3](https://github.com/bbo777/cinelock/issues/3) | 生成 E01-003（空间转换） |
+| [#4](https://github.com/bbo777/cinelock/issues/4) | 生成 E01-004（高风险特写） |
+| [#5](https://github.com/bbo777/cinelock/issues/5) | 生成 E01-005（收尾大远景） |
+| [#6](https://github.com/bbo777/cinelock/issues/6) | 提案：扩展镜06（顿棍立威） |
+| [#7](https://github.com/bbo777/cinelock/issues/7) | 提案：扩展镜07（特训蒙太奇） |
+| [#8](https://github.com/bbo777/cinelock/issues/8) | 用授权资产替换占位参考图 |
+| [#9](https://github.com/bbo777/cinelock/issues/9) | 输出侧连续性核验（visual_qc） |
+| [#10](https://github.com/bbo777/cinelock/issues/10) | Quota-Flow 真机出片记录 |
 
 > 当前事实（2026-10-31）：**1 个原创角色、2 个场景、5 个镜头、4 个启用厂商、20 个变体、56 次参考图引用**，共享修订 `9bb2cfb6449f`；**62 项测试通过**；**成片 0 个**。
 
-看板列建议：
+实际看板列：
 
-| 待认领 | 生成中 | 待人工审片 | 已完成 |
-| --- | --- | --- | --- |
-| 任务已拆好，等执行者 | 已领取，正在生成/开发 | 产物和记录齐了，等审片 | 验收标准全部满足 |
+| Todo（待认领） | In Progress（生成中） | Done（已完成） |
+| --- | --- | --- |
+| 任务已拆好，等执行者 | 已领取，正在生成/开发 | 产物、人工审片与审计全部完成 |
 
-标签建议：`shot`、`assets`、`qc`、`provider`、`proposal`、`good first issue`。
+生成完成后先留在 In Progress，等对应 Issue 里的人工审片结论确认，再移入 Done。
+
+实际标签：`good first issue`（#1）、`help wanted`、`enhancement`（#6 / #7 / #9 / #10）。
 
 ---
 
