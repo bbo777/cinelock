@@ -378,7 +378,7 @@ NineFlow 内置了一个零依赖的 MCP stdio Server，兼容 Python 3.8，不�
 
 ### 10 行配置
 
-把下面这段加入 Claude Desktop 的 `claude_desktop_config.json`：
+把下面这段加入 Claude Desktop 的 `claude_desktop_config.json`（Windows 路径：`%APPDATA%\Claude\claude_desktop_config.json`），保存后重启客户端：
 
 ```json
 {

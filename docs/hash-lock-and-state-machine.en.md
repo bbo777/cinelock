@@ -139,7 +139,7 @@ Neither tool replaces a human review. They just move obvious failures earlier.
 
 NineFlow ships a zero-dependency MCP stdio server. It runs on Python 3.8 without the official SDK, and calls the same engine as the CLI: same revision, same state machine, same audit checks.
 
-Add this to Claude Desktop's `claude_desktop_config.json`:
+Add this to Claude Desktop's `claude_desktop_config.json` (Windows: `%APPDATA%\Claude\claude_desktop_config.json`), then restart the client:
 
 ```json
 {
